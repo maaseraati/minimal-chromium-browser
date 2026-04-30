@@ -5,12 +5,13 @@ import sys
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import QByteArray, QSize, Qt, QUrl
+from PyQt6.QtGui import QIcon, QPainter, QPixmap
+from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QApplication,
     QFrame,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QMainWindow,
     QToolBar,
@@ -18,6 +19,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 
@@ -317,15 +319,11 @@ QToolBar#chromeBar::separator { background: transparent; }
 
 QToolButton[chromeNav="true"] {
     background: transparent;
-    color: #6750A4;
     border: 0;
     border-radius: 18px;
     padding: 0;
     min-width: 36px;
     min-height: 36px;
-    font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans", sans-serif;
-    font-size: 18px;
-    font-weight: 700;
 }
 QToolButton[chromeNav="true"]:hover { background: rgba(103, 80, 164, 0.10); }
 QToolButton[chromeNav="true"]:pressed { background: rgba(103, 80, 164, 0.20); }
@@ -345,16 +343,15 @@ QFrame#addressPill QLineEdit {
     selection-background-color: #EADDFF;
     selection-color: #21005D;
 }
-QFrame#addressPill QLabel#lockIcon {
-    color: #49454F;
-    font-size: 13px;
-    padding: 0 2px 0 4px;
+QFrame#addressPill QToolButton#lockBtn {
+    background: transparent;
+    border: 0;
+    min-width: 24px;
+    min-height: 24px;
 }
 QFrame#addressPill QToolButton#starBtn {
     background: transparent;
-    color: #6750A4;
     border: 0;
-    font-size: 16px;
     min-width: 28px;
     min-height: 28px;
     border-radius: 14px;
@@ -363,13 +360,10 @@ QFrame#addressPill QToolButton#starBtn:hover { background: rgba(103, 80, 164, 0.
 
 QToolButton#dotsBtn {
     background: transparent;
-    color: #6750A4;
     border: 0;
     border-radius: 18px;
     min-width: 36px;
     min-height: 36px;
-    font-size: 22px;
-    font-weight: 700;
 }
 QToolButton#dotsBtn:hover { background: rgba(103, 80, 164, 0.10); }
 
@@ -387,6 +381,70 @@ QToolButton#avatar {
 }
 QToolButton#avatar:hover { background: #765FB6; }
 """
+
+
+PRIMARY_COLOR = "#6750A4"
+ON_SURFACE_VARIANT = "#49454F"
+
+ICON_SVGS = {
+    "arrow_back": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>'
+        "</svg>"
+    ),
+    "arrow_forward": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>'
+        "</svg>"
+    ),
+    "refresh": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M17.65 6.35A7.96 7.96 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8'
+        ' c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6'
+        ' s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>'
+        "</svg>"
+    ),
+    "lock": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10'
+        ' c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2'
+        ' s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1'
+        ' 1.71 0 3.1 1.39 3.1 3.1v2z"/>'
+        "</svg>"
+    ),
+    "star_outline": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27'
+        ' 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38'
+        ' L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/>'
+        "</svg>"
+    ),
+    "star_filled": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63'
+        ' 2 9.24l5.46 4.73L5.82 21 12 17.27z"/>'
+        "</svg>"
+    ),
+    "more_vert": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2'
+        ' s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>'
+        "</svg>"
+    ),
+}
+
+
+def svg_icon(name: str, color: str = PRIMARY_COLOR, size: int = 24) -> QIcon:
+    svg = ICON_SVGS[name].format(c=color)
+    renderer = QSvgRenderer(QByteArray(svg.encode("utf-8")))
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    renderer.render(painter)
+    painter.end()
+    return QIcon(pixmap)
 
 
 def _logo_data_uri() -> str:
@@ -412,13 +470,15 @@ def render_home_html() -> str:
     return HOME_HTML_TEMPLATE.replace("__LOGO_IMG__", logo_img)
 
 
-def _make_nav_button(symbol: str, tooltip: str) -> QToolButton:
+def _make_nav_button(icon_name: str, tooltip: str) -> QToolButton:
     btn = QToolButton()
-    btn.setText(symbol)
+    btn.setIcon(svg_icon(icon_name))
+    btn.setIconSize(QSize(22, 22))
     btn.setToolTip(tooltip)
     btn.setProperty("chromeNav", True)
     btn.setCursor(Qt.CursorShape.PointingHandCursor)
     btn.setAutoRaise(True)
+    btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
     return btn
 
 
@@ -443,23 +503,25 @@ class BrowserWindow(QMainWindow):
 
     # ------------------------------------------------------------------ chrome
     def _build_chrome(self) -> None:
-        self.back_btn = _make_nav_button("\u2190", "Back")
+        self.back_btn = _make_nav_button("arrow_back", "Back")
         self.back_btn.clicked.connect(self.web_view.back)
 
-        self.forward_btn = _make_nav_button("\u2192", "Forward")
+        self.forward_btn = _make_nav_button("arrow_forward", "Forward")
         self.forward_btn.clicked.connect(self.web_view.forward)
 
-        self.reload_btn = _make_nav_button("\u21bb", "Reload")
+        self.reload_btn = _make_nav_button("refresh", "Reload")
         self.reload_btn.clicked.connect(self.web_view.reload)
 
         address_pill = self._build_address_pill()
 
         self.dots_btn = QToolButton()
         self.dots_btn.setObjectName("dotsBtn")
-        self.dots_btn.setText("\u22ee")
+        self.dots_btn.setIcon(svg_icon("more_vert"))
+        self.dots_btn.setIconSize(QSize(22, 22))
         self.dots_btn.setToolTip("Menu")
         self.dots_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.dots_btn.setAutoRaise(True)
+        self.dots_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
 
         self.avatar_btn = QToolButton()
         self.avatar_btn.setObjectName("avatar")
@@ -494,8 +556,15 @@ class BrowserWindow(QMainWindow):
         pill.setObjectName("addressPill")
         pill.setFixedHeight(40)
 
-        lock_label = QLabel("\U0001f512")
-        lock_label.setObjectName("lockIcon")
+        self._lock_icon_outline = svg_icon("lock", color=ON_SURFACE_VARIANT, size=18)
+        lock_btn = QToolButton()
+        lock_btn.setObjectName("lockBtn")
+        lock_btn.setIcon(self._lock_icon_outline)
+        lock_btn.setIconSize(QSize(16, 16))
+        lock_btn.setToolTip("Connection is private")
+        lock_btn.setAutoRaise(True)
+        lock_btn.setEnabled(False)
+        lock_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
 
         self.address_bar = QLineEdit()
         self.address_bar.setFrame(False)
@@ -503,23 +572,28 @@ class BrowserWindow(QMainWindow):
         self.address_bar.setPlaceholderText("Search the web or type a URL")
         self.address_bar.returnPressed.connect(self.open_address)
 
+        self._star_outline = svg_icon("star_outline")
+        self._star_filled = svg_icon("star_filled")
         self.star_btn = QToolButton()
         self.star_btn.setObjectName("starBtn")
-        self.star_btn.setText("\u2606")
+        self.star_btn.setIcon(self._star_outline)
+        self.star_btn.setIconSize(QSize(20, 20))
         self.star_btn.setToolTip("Bookmark this page")
         self.star_btn.setCheckable(True)
         self.star_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.star_btn.toggled.connect(
-            lambda checked: self.star_btn.setText("\u2605" if checked else "\u2606")
-        )
+        self.star_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        self.star_btn.toggled.connect(self._on_star_toggled)
 
         layout = QHBoxLayout(pill)
-        layout.setContentsMargins(10, 0, 4, 0)
+        layout.setContentsMargins(8, 0, 4, 0)
         layout.setSpacing(6)
-        layout.addWidget(lock_label)
+        layout.addWidget(lock_btn)
         layout.addWidget(self.address_bar, stretch=1)
         layout.addWidget(self.star_btn)
         return pill
+
+    def _on_star_toggled(self, checked: bool) -> None:
+        self.star_btn.setIcon(self._star_filled if checked else self._star_outline)
 
     def _build_central(self) -> None:
         page_container = QWidget()
