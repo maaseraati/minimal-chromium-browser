@@ -101,7 +101,7 @@ HOME_HTML_TEMPLATE = """
     }
 
     .brand-mark {
-      height: 0.72em;
+      height: 0.6em;
       width: auto;
       display: block;
       object-fit: contain;
@@ -110,10 +110,7 @@ HOME_HTML_TEMPLATE = """
     }
 
     .brand-text {
-      /* Same dark start as the previous 3-stop variant, but the end is
-         clamped to the logo's median tone instead of the lightest pixel
-         (#DDCFF7) so the right edge of the wordmark doesn't fade out. */
-      background: linear-gradient(95deg, #79679E 0%, #BA9EE6 100%);
+      background: linear-gradient(95deg, #C5AAEC 0%, #B29BDB 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
