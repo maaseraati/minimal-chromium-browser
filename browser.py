@@ -110,14 +110,7 @@ HOME_HTML_TEMPLATE = """
     }
 
     .brand-text {
-      /* Colours sampled from the M logo: darkest pixel (#79679E),
-         median (#BA9EE6) and lightest (#DDCFF7). */
-      background: linear-gradient(
-        95deg,
-        #79679E 0%,
-        #BA9EE6 55%,
-        #DDCFF7 100%
-      );
+      background: linear-gradient(95deg, #BA9EE6 0%, #B29BDB 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
