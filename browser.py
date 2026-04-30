@@ -70,9 +70,9 @@ HOME_HTML_TEMPLATE = """
       margin: 0;
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      padding: 24px;
+      padding: 12vh 24px 24px;
       background:
         radial-gradient(1200px 600px at 18% -10%, rgba(234, 221, 255, 0.55) 0%, transparent 60%),
         radial-gradient(1000px 500px at 90% 110%, rgba(208, 188, 255, 0.40) 0%, transparent 60%),
@@ -84,41 +84,30 @@ HOME_HTML_TEMPLATE = """
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 32px;
+      gap: 28px;
     }
 
     .brand {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      gap: 0;
+      margin: 0;
+      font-family: "Roboto Flex", "Roboto", sans-serif;
+      font-size: clamp(72px, 11vw, 112px);
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      color: var(--md-sys-color-primary);
     }
 
     .brand-mark {
-      width: 96px;
-      height: 96px;
-      border-radius: 28px;
-      background: var(--md-sys-color-surface-container);
-      display: grid;
-      place-items: center;
-      box-shadow: var(--md-sys-elevation-1);
-    }
-
-    .brand-mark img {
-      width: 64px;
-      height: 64px;
-      object-fit: contain;
+      height: 0.95em;
+      width: auto;
       display: block;
-    }
-
-    h1 {
-      margin: 0;
-      font-family: "Roboto Flex", "Roboto", sans-serif;
-      font-size: clamp(56px, 9vw, 84px);
-      line-height: 1.05;
-      font-weight: 600;
-      letter-spacing: -0.03em;
-      color: var(--md-sys-color-primary);
+      object-fit: contain;
+      margin: 0 -0.04em 0.02em -0.05em;
+      filter: drop-shadow(0 4px 14px rgba(103, 80, 164, 0.18));
     }
 
     form.search {
@@ -263,12 +252,7 @@ HOME_HTML_TEMPLATE = """
 </head>
 <body>
   <main>
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">
-        __LOGO_IMG__
-      </div>
-      <h1>morphine</h1>
-    </div>
+    <h1 class="brand">__LOGO_IMG__<span>orphine</span></h1>
 
     <form class="search" action="https://www.google.com/search" method="get" role="search">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -458,13 +442,12 @@ def render_home_html() -> str:
     data_uri = _logo_data_uri()
     if data_uri:
         logo_img = (
-            f'<img src="{data_uri}" alt="morphine logo" '
-            f'width="64" height="64" draggable="false">'
+            f'<img class="brand-mark" src="{data_uri}" alt="m" draggable="false">'
         )
     else:
         logo_img = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" '
-            'viewBox="0 0 24 24" fill="#6750A4" aria-hidden="true">'
+            '<svg class="brand-mark" xmlns="http://www.w3.org/2000/svg" '
+            'viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
             '<path d="M3 4h3l3 9 3-9h3v16h-3v-9l-3 9h-2L4 11v9H3V4z"/></svg>'
         )
     return HOME_HTML_TEMPLATE.replace("__LOGO_IMG__", logo_img)
