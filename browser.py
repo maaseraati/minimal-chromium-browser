@@ -106,6 +106,7 @@ HOME_HTML_TEMPLATE = """
       display: block;
       object-fit: contain;
       margin: 0 -0.01em 0 -0.04em;
+      transform: translateY(0.12em);
       filter: drop-shadow(0 5px 16px rgba(103, 80, 164, 0.20));
     }
 
