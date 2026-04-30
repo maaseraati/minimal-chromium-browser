@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import sys
+from dataclasses import dataclass
+from html import escape
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -15,7 +17,8 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QSizePolicy,
-    QTabWidget,
+    QStackedWidget,
+    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -26,6 +29,7 @@ from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 APP_TITLE = "morphine"
 HOME_URL = "morphine://home"
+HISTORY_URL = "morphine://history"
 GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
 
 ASSETS_DIR = Path(__file__).resolve().parent
@@ -294,6 +298,99 @@ HOME_HTML_TEMPLATE = """
 </html>
 """
 
+HISTORY_HTML_TEMPLATE = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #FAF6FF;
+      color: #1D1B20;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 64px 24px;
+      background:
+        radial-gradient(900px 420px at 20% -10%, rgba(234, 221, 255, 0.50) 0%, transparent 60%),
+        #FAF6FF;
+    }
+
+    main {
+      width: min(820px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: 42px;
+      line-height: 1.1;
+      color: #6750A4;
+    }
+
+    .empty {
+      padding: 28px;
+      border-radius: 28px;
+      background: #ECE6F0;
+      color: #49454F;
+      font-size: 16px;
+    }
+
+    ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    a {
+      display: block;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: #F3EDF7;
+      color: #1D1B20;
+      text-decoration: none;
+    }
+
+    a:hover {
+      background: #ECE6F0;
+    }
+
+    strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      display: block;
+      color: #49454F;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>History</h1>
+    __HISTORY_ITEMS__
+  </main>
+</body>
+</html>
+"""
+
 
 WINDOW_QSS = """
 QMainWindow, QWidget#chromeRoot {
@@ -368,15 +465,14 @@ QToolButton#avatar {
 }
 QToolButton#avatar:hover { background: #765FB6; }
 
-QTabWidget#tabs {
+QWidget#tabStrip {
     background: #FAF6FF;
     border: 0;
 }
-QTabWidget#tabs::pane {
-    border: 0;
-    top: -1px;
+QTabBar#tabBar {
+    background: #FAF6FF;
 }
-QTabBar::tab {
+QTabBar#tabBar::tab {
     min-width: 132px;
     max-width: 220px;
     height: 34px;
@@ -388,11 +484,11 @@ QTabBar::tab {
     background: #F3EDF7;
     color: #49454F;
 }
-QTabBar::tab:selected {
+QTabBar#tabBar::tab:selected {
     background: #FAF6FF;
     color: #1D1B20;
 }
-QTabBar::tab:hover:!selected {
+QTabBar#tabBar::tab:hover:!selected {
     background: #ECE6F0;
 }
 QToolButton#newTabBtn {
@@ -404,9 +500,13 @@ QToolButton#newTabBtn {
     margin-top: 8px;
 }
 QToolButton#newTabBtn:hover { background: rgba(103, 80, 164, 0.10); }
-QTabBar::close-button {
+QTabBar#tabBar::close-button {
     subcontrol-position: right;
     margin-right: 8px;
+}
+QStackedWidget#pages {
+    background: #FAF6FF;
+    border: 0;
 }
 """
 
@@ -457,6 +557,13 @@ ICON_SVGS = {
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
         '<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2'
         ' s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>'
+        "</svg>"
+    ),
+    "history": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M13 3a9 9 0 1 1-8.95 8H2l3-3.01L8 11H6.06A7 7 0 1 0 13 5'
+        'a6.97 6.97 0 0 0-4.95 2.05L6.64 5.64A8.95 8.95 0 0 1 13 3zm-1 4h1.5'
+        'v5.25l4.5 2.67-.75 1.23L12 13V7z"/>'
         "</svg>"
     ),
     "add": (
@@ -523,6 +630,12 @@ class BrowserTab(QWebEngineView):
         return self.window.add_tab(switch_to=True)
 
 
+@dataclass
+class HistoryEntry:
+    title: str
+    url: str
+
+
 class BrowserWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -532,6 +645,8 @@ class BrowserWindow(QMainWindow):
         self.setStyleSheet(WINDOW_QSS)
 
         self._home_html = render_home_html()
+        self._history: list[HistoryEntry] = []
+        self._recording_history = True
 
         self._build_chrome()
         self._build_central()
@@ -548,6 +663,9 @@ class BrowserWindow(QMainWindow):
 
         self.reload_btn = _make_nav_button("refresh", "Reload")
         self.reload_btn.clicked.connect(lambda: self.active_web_view().reload())
+
+        self.history_btn = _make_nav_button("history", "History")
+        self.history_btn.clicked.connect(self.show_history)
 
         address_pill = self._build_address_pill()
 
@@ -577,6 +695,7 @@ class BrowserWindow(QMainWindow):
         layout.addWidget(self.back_btn)
         layout.addWidget(self.forward_btn)
         layout.addWidget(self.reload_btn)
+        layout.addWidget(self.history_btn)
         layout.addStretch(1)
         layout.addWidget(address_pill)
         layout.addStretch(1)
@@ -637,13 +756,20 @@ class BrowserWindow(QMainWindow):
         layout = QVBoxLayout(page_container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        self.tabs = QTabWidget()
-        self.tabs.setObjectName("tabs")
-        self.tabs.setDocumentMode(True)
+        tab_strip = QWidget()
+        tab_strip.setObjectName("tabStrip")
+        tab_strip.setFixedHeight(48)
+        tab_layout = QHBoxLayout(tab_strip)
+        tab_layout.setContentsMargins(24, 0, 24, 0)
+        tab_layout.setSpacing(6)
+
+        self.tabs = QTabBar()
+        self.tabs.setObjectName("tabBar")
         self.tabs.setMovable(True)
         self.tabs.setTabsClosable(True)
         self.tabs.currentChanged.connect(self._on_current_tab_changed)
         self.tabs.tabCloseRequested.connect(self.close_tab)
+        tab_layout.addWidget(self.tabs, stretch=1)
 
         self.new_tab_btn = QToolButton()
         self.new_tab_btn.setObjectName("newTabBtn")
@@ -653,10 +779,14 @@ class BrowserWindow(QMainWindow):
         self.new_tab_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.new_tab_btn.setAutoRaise(True)
         self.new_tab_btn.clicked.connect(lambda: self.add_tab(switch_to=True))
-        self.tabs.setCornerWidget(self.new_tab_btn, Qt.Corner.TopRightCorner)
+        tab_layout.addWidget(self.new_tab_btn)
 
+        self.pages = QStackedWidget()
+        self.pages.setObjectName("pages")
+
+        layout.addWidget(tab_strip)
         layout.addWidget(self.chrome_bar)
-        layout.addWidget(self.tabs)
+        layout.addWidget(self.pages)
         self.setCentralWidget(page_container)
 
     # --------------------------------------------------------------- behaviour
@@ -667,32 +797,57 @@ class BrowserWindow(QMainWindow):
         view = BrowserTab(self)
         view.urlChanged.connect(lambda url, tab=view: self.update_address_bar(tab, url))
         view.titleChanged.connect(lambda title, tab=view: self.update_tab_title(tab, title))
-        index = self.tabs.addTab(view, APP_TITLE)
+        index = self.pages.addWidget(view)
+        self.tabs.addTab(APP_TITLE)
         self.load_home(view)
         if switch_to:
             self.tabs.setCurrentIndex(index)
+            self.pages.setCurrentIndex(index)
         return view
 
     def close_tab(self, index: int) -> None:
-        if self.tabs.count() == 1:
+        if self.pages.count() == 1:
             self.load_home(self.active_web_view())
             return
 
-        tab = self.tabs.widget(index)
+        view = self.pages.widget(index)
         self.tabs.removeTab(index)
-        tab.deleteLater()
+        self.pages.removeWidget(view)
+        view.deleteLater()
 
     def active_web_view(self) -> BrowserTab:
-        tab = self.tabs.currentWidget()
+        tab = self.pages.currentWidget()
         if not isinstance(tab, BrowserTab):
             return self.add_tab(switch_to=True)
         return tab
 
     def load_home(self, view: BrowserTab | None = None) -> None:
         target = view or self.active_web_view()
+        self._recording_history = False
         target.setHtml(self._home_html, QUrl(HOME_URL))
+        self._recording_history = True
         if target is self.active_web_view():
             self.address_bar.setText("")
+
+    def show_history(self) -> None:
+        self._recording_history = False
+        self.active_web_view().setHtml(self.render_history_html(), QUrl(HISTORY_URL))
+        self._recording_history = True
+        self.address_bar.setText(HISTORY_URL)
+
+    def render_history_html(self) -> str:
+        if not self._history:
+            items = '<p class="empty">No browsing history yet.</p>'
+        else:
+            rows = []
+            for entry in reversed(self._history[-50:]):
+                title = escape(entry.title or entry.url)
+                url = escape(entry.url, quote=True)
+                rows.append(
+                    f'<li><a href="{url}"><strong>{title}</strong><span>{url}</span></a></li>'
+                )
+            items = f"<ol>{''.join(rows)}</ol>"
+        return HISTORY_HTML_TEMPLATE.replace("__HISTORY_ITEMS__", items)
 
     def load_url(self, raw_url: str) -> None:
         url = raw_url.strip()
@@ -715,13 +870,15 @@ class BrowserWindow(QMainWindow):
         self.star_btn.setChecked(False)
 
     def update_tab_title(self, view: BrowserTab, title: str) -> None:
-        index = self.tabs.indexOf(view)
+        index = self.pages.indexOf(view)
         if index != -1:
             self.tabs.setTabText(index, title or APP_TITLE)
         if view is self.active_web_view():
             self.update_window_title(title)
+        self._record_history(view, title)
 
-    def _on_current_tab_changed(self, _index: int) -> None:
+    def _on_current_tab_changed(self, index: int) -> None:
+        self.pages.setCurrentIndex(index)
         view = self.active_web_view()
         url = view.url().toString()
         self.address_bar.setText("" if url == HOME_URL else url)
@@ -730,6 +887,18 @@ class BrowserWindow(QMainWindow):
 
     def update_window_title(self, title: str) -> None:
         self.setWindowTitle(title or APP_TITLE)
+
+    def _record_history(self, view: BrowserTab, title: str) -> None:
+        if not self._recording_history:
+            return
+
+        url = view.url().toString()
+        if not url or url in {HOME_URL, HISTORY_URL}:
+            return
+        if self._history and self._history[-1].url == url:
+            self._history[-1].title = title or url
+            return
+        self._history.append(HistoryEntry(title=title or url, url=url))
 
     @staticmethod
     def is_search_query(value: str) -> bool:
