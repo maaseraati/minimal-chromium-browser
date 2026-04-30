@@ -101,12 +101,12 @@ HOME_HTML_TEMPLATE = """
     }
 
     .brand-mark {
-      height: 0.72em;
+      height: 0.6em;
       width: auto;
       display: block;
       object-fit: contain;
       margin: 0 -0.01em 0 -0.04em;
-      filter: drop-shadow(0 6px 18px rgba(103, 80, 164, 0.22));
+      filter: drop-shadow(0 5px 16px rgba(103, 80, 164, 0.20));
     }
 
     .brand-text {
