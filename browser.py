@@ -473,8 +473,8 @@ QToolButton#avatar:hover { background: #765FB6; }
 
 QWidget#appShell {
     background: #FAF6FF;
-    border: 1px solid #E8E0EE;
-    border-radius: 14px;
+    border: 0;
+    border-radius: 0;
 }
 QWidget#tabStrip {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FCF8FF, stop:1 #FEFBFF);
@@ -874,7 +874,7 @@ class BrowserWindow(QMainWindow):
         page_container = QWidget()
         page_container.setObjectName("chromeRoot")
         outer_layout = QVBoxLayout(page_container)
-        outer_layout.setContentsMargins(32, 96, 32, 32)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
 
         shell = QWidget()
