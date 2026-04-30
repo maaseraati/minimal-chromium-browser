@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
     QMainWindow,
-    QToolBar,
+    QSizePolicy,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -125,8 +125,7 @@ HOME_HTML_TEMPLATE = """
       padding: 4px 4px 4px 16px;
       background: var(--md-sys-color-surface-container-high);
       border-radius: 28px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-      transition: box-shadow 150ms ease, background 150ms ease;
+      transition: background 150ms ease;
     }
 
     form.search:hover {
@@ -135,7 +134,6 @@ HOME_HTML_TEMPLATE = """
 
     form.search:focus-within {
       background: var(--md-sys-color-surface-container);
-      box-shadow: var(--md-sys-elevation-2);
     }
 
     .search-icon {
@@ -171,7 +169,7 @@ HOME_HTML_TEMPLATE = """
       color: var(--md-sys-color-on-primary);
       font-family: inherit;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 700;
       letter-spacing: 0.1px;
       cursor: pointer;
       transition: background 150ms ease, box-shadow 150ms ease;
@@ -300,13 +298,10 @@ WINDOW_QSS = """
 QMainWindow, QWidget#chromeRoot {
     background: #FAF6FF;
 }
-QToolBar#chromeBar {
+QWidget#chromeBar {
     background: #FAF6FF;
     border: 0;
-    padding: 8px 12px;
-    spacing: 4px;
 }
-QToolBar#chromeBar::separator { background: transparent; }
 
 QToolButton[chromeNav="true"] {
     background: transparent;
@@ -323,14 +318,14 @@ QToolButton[chromeNav="true"]:disabled { color: #C0BAC9; }
 QFrame#addressPill {
     background: #ECE6F0;
     border: 0;
-    border-radius: 22px;
+    border-radius: 20px;
 }
 QFrame#addressPill:hover { background: #E5DEEC; }
 QFrame#addressPill QLineEdit {
     border: 0;
     background: transparent;
     color: #1D1B20;
-    font-size: 14px;
+    font-size: 16px;
     selection-background-color: #EADDFF;
     selection-color: #21005D;
 }
@@ -365,10 +360,10 @@ QToolButton#avatar {
     border-radius: 16px;
     font-weight: 700;
     font-size: 13px;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 32px;
-    max-height: 32px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
 }
 QToolButton#avatar:hover { background: #765FB6; }
 """
@@ -520,31 +515,30 @@ class BrowserWindow(QMainWindow):
         self.avatar_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.avatar_btn.setAutoRaise(True)
 
-        toolbar = QToolBar("Navigation")
-        toolbar.setObjectName("chromeBar")
-        toolbar.setMovable(False)
-        toolbar.setFloatable(False)
-
         bar = QWidget()
+        bar.setObjectName("chromeBar")
+        bar.setFixedHeight(48)
+        bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        layout.setContentsMargins(24, 0, 24, 0)
+        layout.setSpacing(0)
         layout.addWidget(self.back_btn)
         layout.addWidget(self.forward_btn)
         layout.addWidget(self.reload_btn)
-        layout.addSpacing(8)
-        layout.addWidget(address_pill, stretch=1)
-        layout.addSpacing(8)
+        layout.addStretch(1)
+        layout.addWidget(address_pill)
+        layout.addStretch(1)
         layout.addWidget(self.dots_btn)
+        layout.addSpacing(14)
         layout.addWidget(self.avatar_btn)
-
-        toolbar.addWidget(bar)
-        self.addToolBar(toolbar)
+        self.chrome_bar = bar
 
     def _build_address_pill(self) -> QFrame:
         pill = QFrame()
         pill.setObjectName("addressPill")
         pill.setFixedHeight(40)
+        pill.setMinimumWidth(580)
+        pill.setMaximumWidth(580)
 
         self._lock_icon_outline = svg_icon("lock", color=ON_SURFACE_VARIANT, size=18)
         lock_btn = QToolButton()
@@ -575,8 +569,8 @@ class BrowserWindow(QMainWindow):
         self.star_btn.toggled.connect(self._on_star_toggled)
 
         layout = QHBoxLayout(pill)
-        layout.setContentsMargins(8, 0, 4, 0)
-        layout.setSpacing(6)
+        layout.setContentsMargins(14, 0, 8, 0)
+        layout.setSpacing(8)
         layout.addWidget(lock_btn)
         layout.addWidget(self.address_bar, stretch=1)
         layout.addWidget(self.star_btn)
@@ -590,6 +584,8 @@ class BrowserWindow(QMainWindow):
         page_container.setObjectName("chromeRoot")
         layout = QVBoxLayout(page_container)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.chrome_bar)
         layout.addWidget(self.web_view)
         self.setCentralWidget(page_container)
 
