@@ -7,18 +7,19 @@ from html import escape
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from PyQt6.QtCore import QByteArray, QSize, Qt, QUrl
+from PyQt6.QtCore import QByteArray, QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QSize, Qt, QUrl
 from PyQt6.QtGui import QIcon, QPainter, QPixmap
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QApplication,
     QFrame,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QMainWindow,
     QSizePolicy,
     QStackedWidget,
-    QTabBar,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -400,30 +401,35 @@ QWidget#chromeBar {
     background: #FAF6FF;
     border: 0;
 }
+QWidget#navGroup {
+    background: #F3EDF7;
+    border: 0;
+    border-radius: 30px;
+}
 
 QToolButton[chromeNav="true"] {
     background: transparent;
     border: 0;
-    border-radius: 18px;
+    border-radius: 22px;
     padding: 0;
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 44px;
+    min-height: 44px;
 }
 QToolButton[chromeNav="true"]:hover { background: rgba(103, 80, 164, 0.10); }
 QToolButton[chromeNav="true"]:pressed { background: rgba(103, 80, 164, 0.20); }
 QToolButton[chromeNav="true"]:disabled { color: #C0BAC9; }
 
 QFrame#addressPill {
-    background: #ECE6F0;
+    background: #F3EDF7;
     border: 0;
-    border-radius: 20px;
+    border-radius: 30px;
 }
 QFrame#addressPill:hover { background: #E5DEEC; }
 QFrame#addressPill QLineEdit {
     border: 0;
     background: transparent;
     color: #1D1B20;
-    font-size: 16px;
+    font-size: 20px;
     selection-background-color: #EADDFF;
     selection-color: #21005D;
 }
@@ -445,9 +451,9 @@ QFrame#addressPill QToolButton#starBtn:hover { background: rgba(103, 80, 164, 0.
 QToolButton#dotsBtn {
     background: transparent;
     border: 0;
-    border-radius: 18px;
-    min-width: 36px;
-    min-height: 36px;
+    border-radius: 22px;
+    min-width: 44px;
+    min-height: 44px;
 }
 QToolButton#dotsBtn:hover { background: rgba(103, 80, 164, 0.10); }
 
@@ -455,58 +461,83 @@ QToolButton#avatar {
     background: #6750A4;
     color: #FFFFFF;
     border: 0;
-    border-radius: 16px;
+    border-radius: 20px;
     font-weight: 700;
-    font-size: 13px;
-    min-width: 30px;
-    min-height: 30px;
-    max-width: 30px;
-    max-height: 30px;
+    font-size: 20px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
 }
 QToolButton#avatar:hover { background: #765FB6; }
 
+QWidget#appShell {
+    background: #FAF6FF;
+    border: 1px solid #E8E0EE;
+    border-radius: 14px;
+}
 QWidget#tabStrip {
-    background: #FAF6FF;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FCF8FF, stop:1 #FEFBFF);
     border: 0;
 }
-QTabBar#tabBar {
-    background: #FAF6FF;
-}
-QTabBar#tabBar::tab {
-    min-width: 132px;
-    max-width: 220px;
-    height: 34px;
-    padding: 0 24px 0 14px;
-    margin: 7px 2px 0 0;
+QWidget#browserTab {
+    background: #FFFFFF;
     border: 0;
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-    background: #F3EDF7;
-    color: #49454F;
-}
-QTabBar#tabBar::tab:selected {
-    background: #FAF6FF;
+    border-radius: 8px;
     color: #1D1B20;
 }
-QTabBar#tabBar::tab:hover:!selected {
-    background: #ECE6F0;
+QWidget#browserTab[active="true"] {
+    background: #F5EEFF;
 }
-QToolButton#newTabBtn {
+QLabel#tabBadge {
+    background: #6750A4;
+    color: #FFFFFF;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 16px;
+}
+QLabel#tabTitle {
+    color: #1D1B20;
+    font-size: 16px;
+}
+QToolButton#tabCloseBtn {
     background: transparent;
     border: 0;
-    border-radius: 16px;
-    min-width: 32px;
-    min-height: 32px;
-    margin-top: 8px;
+    border-radius: 13px;
+    min-width: 26px;
+    min-height: 26px;
 }
-QToolButton#newTabBtn:hover { background: rgba(103, 80, 164, 0.10); }
-QTabBar#tabBar::close-button {
-    subcontrol-position: right;
-    margin-right: 8px;
+QToolButton#tabCloseBtn:hover {
+    background: rgba(29, 27, 32, 0.08);
 }
+QToolButton#newTabBtn {
+    background: #F1EAF8;
+    border: 0;
+    border-radius: 7px;
+    min-width: 48px;
+    min-height: 34px;
+    max-width: 48px;
+    max-height: 34px;
+}
+QToolButton#newTabBtn:hover { background: #EADDFF; }
 QStackedWidget#pages {
     background: #FAF6FF;
     border: 0;
+}
+QWidget#windowControls {
+    background: transparent;
+}
+QToolButton[windowControl="true"] {
+    background: transparent;
+    border: 0;
+    border-radius: 14px;
+    min-width: 42px;
+    min-height: 32px;
+    font-size: 24px;
+    color: #1D1B20;
+}
+QToolButton[windowControl="true"]:hover {
+    background: rgba(29, 27, 32, 0.08);
 }
 """
 
@@ -564,6 +595,17 @@ ICON_SVGS = {
         '<path d="M13 3a9 9 0 1 1-8.95 8H2l3-3.01L8 11H6.06A7 7 0 1 0 13 5'
         'a6.97 6.97 0 0 0-4.95 2.05L6.64 5.64A8.95 8.95 0 0 1 13 3zm-1 4h1.5'
         'v5.25l4.5 2.67-.75 1.23L12 13V7z"/>'
+        "</svg>"
+    ),
+    "home": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>'
+        "</svg>"
+    ),
+    "close": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7'
+        ' 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3l6.3 6.29 6.29-6.29z"/>'
         "</svg>"
     ),
     "add": (
@@ -630,6 +672,67 @@ class BrowserTab(QWebEngineView):
         return self.window.add_tab(switch_to=True)
 
 
+class TabButton(QWidget):
+    def __init__(
+        self,
+        index: int,
+        title: str,
+        window: BrowserWindow,
+    ) -> None:
+        super().__init__()
+        self.index = index
+        self.window = window
+        self.setObjectName("browserTab")
+        self.setFixedSize(260, 48)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(16, 0, 12, 0)
+        layout.setSpacing(12)
+
+        self.icon_label = QLabel()
+        self.icon_label.setObjectName("tabBadge")
+        self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.icon_label.setFixedSize(28, 28)
+        layout.addWidget(self.icon_label)
+
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("tabTitle")
+        self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        layout.addWidget(self.title_label)
+
+        self.close_btn = QToolButton()
+        self.close_btn.setObjectName("tabCloseBtn")
+        self.close_btn.setIcon(svg_icon("close", color=ON_SURFACE_VARIANT, size=18))
+        self.close_btn.setIconSize(QSize(16, 16))
+        self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.close_btn.setAutoRaise(True)
+        self.close_btn.clicked.connect(lambda: self.window.close_tab(self.index))
+        layout.addWidget(self.close_btn)
+        self.set_title(title)
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.window.select_tab(self.index)
+        super().mousePressEvent(event)
+
+    def set_active(self, active: bool) -> None:
+        self.setProperty("active", active)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def set_title(self, title: str) -> None:
+        self.title_label.setText(title)
+        if title.lower() == "history":
+            self.icon_label.setText("")
+            self.icon_label.setStyleSheet("background: transparent;")
+            self.icon_label.setPixmap(svg_icon("history").pixmap(28, 28))
+        else:
+            self.icon_label.setPixmap(QPixmap())
+            self.icon_label.setStyleSheet("")
+            self.icon_label.setText("m")
+
+
 @dataclass
 class HistoryEntry:
     title: str
@@ -640,6 +743,7 @@ class BrowserWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
         self.setWindowTitle(APP_TITLE)
         self.resize(1200, 800)
         self.setStyleSheet(WINDOW_QSS)
@@ -647,11 +751,19 @@ class BrowserWindow(QMainWindow):
         self._home_html = render_home_html()
         self._history: list[HistoryEntry] = []
         self._recording_history = True
+        self._tab_animations: list[QParallelAnimationGroup] = []
+        self.current_tab_index = -1
 
         self._build_chrome()
         self._build_central()
 
         self.add_tab(switch_to=True)
+
+    def toggle_window_maximized(self) -> None:
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
 
     # ------------------------------------------------------------------ chrome
     def _build_chrome(self) -> None:
@@ -664,8 +776,8 @@ class BrowserWindow(QMainWindow):
         self.reload_btn = _make_nav_button("refresh", "Reload")
         self.reload_btn.clicked.connect(lambda: self.active_web_view().reload())
 
-        self.history_btn = _make_nav_button("history", "History")
-        self.history_btn.clicked.connect(self.show_history)
+        self.home_btn = _make_nav_button("home", "Home")
+        self.home_btn.clicked.connect(lambda: self.load_home())
 
         address_pill = self._build_address_pill()
 
@@ -687,29 +799,37 @@ class BrowserWindow(QMainWindow):
 
         bar = QWidget()
         bar.setObjectName("chromeBar")
-        bar.setFixedHeight(48)
+        bar.setFixedHeight(92)
         bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(24, 0, 24, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self.back_btn)
-        layout.addWidget(self.forward_btn)
-        layout.addWidget(self.reload_btn)
-        layout.addWidget(self.history_btn)
-        layout.addStretch(1)
+        layout.setContentsMargins(14, 14, 22, 22)
+        layout.setSpacing(20)
+
+        nav_group = QWidget()
+        nav_group.setObjectName("navGroup")
+        nav_group.setFixedHeight(60)
+        nav_layout = QHBoxLayout(nav_group)
+        nav_layout.setContentsMargins(14, 0, 14, 0)
+        nav_layout.setSpacing(10)
+        nav_layout.addWidget(self.back_btn)
+        nav_layout.addWidget(self.forward_btn)
+        nav_layout.addWidget(self.reload_btn)
+        nav_layout.addWidget(self.home_btn)
+        layout.addWidget(nav_group)
         layout.addWidget(address_pill)
-        layout.addStretch(1)
+        layout.addStretch()
         layout.addWidget(self.dots_btn)
-        layout.addSpacing(14)
+        self.dots_btn.clicked.connect(self.show_history)
+        layout.addSpacing(18)
         layout.addWidget(self.avatar_btn)
         self.chrome_bar = bar
 
     def _build_address_pill(self) -> QFrame:
         pill = QFrame()
         pill.setObjectName("addressPill")
-        pill.setFixedHeight(40)
-        pill.setMinimumWidth(580)
-        pill.setMaximumWidth(580)
+        pill.setFixedHeight(60)
+        pill.setMinimumWidth(680)
+        pill.setMaximumWidth(680)
 
         self._lock_icon_outline = svg_icon("lock", color=ON_SURFACE_VARIANT, size=18)
         lock_btn = QToolButton()
@@ -753,23 +873,27 @@ class BrowserWindow(QMainWindow):
     def _build_central(self) -> None:
         page_container = QWidget()
         page_container.setObjectName("chromeRoot")
-        layout = QVBoxLayout(page_container)
+        outer_layout = QVBoxLayout(page_container)
+        outer_layout.setContentsMargins(32, 96, 32, 32)
+        outer_layout.setSpacing(0)
+
+        shell = QWidget()
+        shell.setObjectName("appShell")
+        layout = QVBoxLayout(shell)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         tab_strip = QWidget()
         tab_strip.setObjectName("tabStrip")
-        tab_strip.setFixedHeight(48)
+        tab_strip.setFixedHeight(68)
         tab_layout = QHBoxLayout(tab_strip)
-        tab_layout.setContentsMargins(24, 0, 24, 0)
-        tab_layout.setSpacing(6)
+        tab_layout.setContentsMargins(14, 14, 24, 0)
+        tab_layout.setSpacing(12)
 
-        self.tabs = QTabBar()
-        self.tabs.setObjectName("tabBar")
-        self.tabs.setMovable(True)
-        self.tabs.setTabsClosable(True)
-        self.tabs.currentChanged.connect(self._on_current_tab_changed)
-        self.tabs.tabCloseRequested.connect(self.close_tab)
-        tab_layout.addWidget(self.tabs, stretch=1)
+        self.tab_buttons_container = QWidget()
+        self.tab_buttons_layout = QHBoxLayout(self.tab_buttons_container)
+        self.tab_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.tab_buttons_layout.setSpacing(12)
+        tab_layout.addWidget(self.tab_buttons_container)
 
         self.new_tab_btn = QToolButton()
         self.new_tab_btn.setObjectName("newTabBtn")
@@ -780,6 +904,25 @@ class BrowserWindow(QMainWindow):
         self.new_tab_btn.setAutoRaise(True)
         self.new_tab_btn.clicked.connect(lambda: self.add_tab(switch_to=True))
         tab_layout.addWidget(self.new_tab_btn)
+        tab_layout.addStretch()
+
+        window_controls = QWidget()
+        window_controls.setObjectName("windowControls")
+        window_layout = QHBoxLayout(window_controls)
+        window_layout.setContentsMargins(0, 0, 0, 0)
+        window_layout.setSpacing(18)
+        for text, slot in (
+            ("–", self.showMinimized),
+            ("▢", self.toggle_window_maximized),
+            ("×", self.close),
+        ):
+            btn = QToolButton()
+            btn.setText(text)
+            btn.setProperty("windowControl", True)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(slot)
+            window_layout.addWidget(btn)
+        tab_layout.addWidget(window_controls)
 
         self.pages = QStackedWidget()
         self.pages.setObjectName("pages")
@@ -787,6 +930,7 @@ class BrowserWindow(QMainWindow):
         layout.addWidget(tab_strip)
         layout.addWidget(self.chrome_bar)
         layout.addWidget(self.pages)
+        outer_layout.addWidget(shell)
         self.setCentralWidget(page_container)
 
     # --------------------------------------------------------------- behaviour
@@ -798,11 +942,12 @@ class BrowserWindow(QMainWindow):
         view.urlChanged.connect(lambda url, tab=view: self.update_address_bar(tab, url))
         view.titleChanged.connect(lambda title, tab=view: self.update_tab_title(tab, title))
         index = self.pages.addWidget(view)
-        self.tabs.addTab(APP_TITLE)
+        tab_button = TabButton(index, APP_TITLE, self)
+        self.tab_buttons_layout.addWidget(tab_button)
         self.load_home(view)
+        self._sync_tab_buttons()
         if switch_to:
-            self.tabs.setCurrentIndex(index)
-            self.pages.setCurrentIndex(index)
+            self.select_tab(index)
         return view
 
     def close_tab(self, index: int) -> None:
@@ -811,9 +956,71 @@ class BrowserWindow(QMainWindow):
             return
 
         view = self.pages.widget(index)
-        self.tabs.removeTab(index)
+        tab_button = self.tab_buttons_layout.itemAt(index).widget()
+        if not isinstance(tab_button, TabButton):
+            self._remove_tab(index, view)
+            return
+
+        opacity = QGraphicsOpacityEffect(tab_button)
+        tab_button.setGraphicsEffect(opacity)
+        tab_button.setMinimumWidth(0)
+        tab_button.setMaximumWidth(tab_button.width())
+
+        fade = QPropertyAnimation(opacity, b"opacity", self)
+        fade.setDuration(160)
+        fade.setStartValue(1.0)
+        fade.setEndValue(0.0)
+        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        shrink.setDuration(180)
+        shrink.setStartValue(tab_button.width())
+        shrink.setEndValue(0)
+        shrink.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(fade)
+        group.addAnimation(shrink)
+        self._tab_animations.append(group)
+        group.finished.connect(lambda: self._finish_close_animation(group, index, view))
+        group.start()
+
+    def _finish_close_animation(
+        self,
+        animation: QParallelAnimationGroup,
+        index: int,
+        view: QWidget,
+    ) -> None:
+        self._tab_animations.remove(animation)
+        self._remove_tab(index, view)
+
+    def _remove_tab(self, index: int, view: QWidget) -> None:
+        item = self.tab_buttons_layout.takeAt(index)
+        if item:
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
         self.pages.removeWidget(view)
         view.deleteLater()
+        if self.current_tab_index >= self.pages.count():
+            self.current_tab_index = self.pages.count() - 1
+        self.select_tab(max(0, self.current_tab_index))
+        self._sync_tab_buttons()
+
+    def select_tab(self, index: int) -> None:
+        if index < 0 or index >= self.pages.count():
+            return
+        self.current_tab_index = index
+        self.pages.setCurrentIndex(index)
+        self._on_current_tab_changed(index)
+        self._sync_tab_buttons()
+
+    def _sync_tab_buttons(self) -> None:
+        for index in range(self.tab_buttons_layout.count()):
+            widget = self.tab_buttons_layout.itemAt(index).widget()
+            if isinstance(widget, TabButton):
+                widget.index = index
+                widget.set_active(index == self.current_tab_index)
 
     def active_web_view(self) -> BrowserTab:
         tab = self.pages.currentWidget()
@@ -872,7 +1079,9 @@ class BrowserWindow(QMainWindow):
     def update_tab_title(self, view: BrowserTab, title: str) -> None:
         index = self.pages.indexOf(view)
         if index != -1:
-            self.tabs.setTabText(index, title or APP_TITLE)
+            widget = self.tab_buttons_layout.itemAt(index).widget()
+            if isinstance(widget, TabButton):
+                widget.set_title(title or APP_TITLE)
         if view is self.active_web_view():
             self.update_window_title(title)
         self._record_history(view, title)
