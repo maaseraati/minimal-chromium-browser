@@ -89,25 +89,37 @@ HOME_HTML_TEMPLATE = """
 
     .brand {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: center;
       gap: 0;
       margin: 0;
       font-family: "Roboto Flex", "Roboto", sans-serif;
-      font-size: clamp(72px, 11vw, 112px);
+      font-size: clamp(72px, 11vw, 116px);
       line-height: 1;
       font-weight: 600;
       letter-spacing: -0.04em;
-      color: var(--md-sys-color-primary);
     }
 
     .brand-mark {
-      height: 0.95em;
+      height: 0.72em;
       width: auto;
       display: block;
       object-fit: contain;
-      margin: 0 -0.04em 0.02em -0.05em;
-      filter: drop-shadow(0 4px 14px rgba(103, 80, 164, 0.18));
+      margin: 0 -0.01em 0 -0.04em;
+      filter: drop-shadow(0 6px 18px rgba(103, 80, 164, 0.22));
+    }
+
+    .brand-text {
+      background: linear-gradient(
+        95deg,
+        #6750A4 0%,
+        #8B6FCF 55%,
+        #B49DDB 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
     }
 
     form.search {
@@ -252,7 +264,7 @@ HOME_HTML_TEMPLATE = """
 </head>
 <body>
   <main>
-    <h1 class="brand">__LOGO_IMG__<span>orphine</span></h1>
+    <h1 class="brand">__LOGO_IMG__<span class="brand-text">orphine</span></h1>
 
     <form class="search" action="https://www.google.com/search" method="get" role="search">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
