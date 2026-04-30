@@ -77,7 +77,7 @@ class BrowserWindow(QMainWindow):
         if not url:
             return
 
-        if "://" not in url:
+        if not QUrl(url).scheme():
             url = f"https://{url}"
 
         self.web_view.setUrl(QUrl(url))
