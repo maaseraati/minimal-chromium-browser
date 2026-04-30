@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QMainWindow,
     QSizePolicy,
+    QTabWidget,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -366,6 +367,47 @@ QToolButton#avatar {
     max-height: 30px;
 }
 QToolButton#avatar:hover { background: #765FB6; }
+
+QTabWidget#tabs {
+    background: #FAF6FF;
+    border: 0;
+}
+QTabWidget#tabs::pane {
+    border: 0;
+    top: -1px;
+}
+QTabBar::tab {
+    min-width: 132px;
+    max-width: 220px;
+    height: 34px;
+    padding: 0 24px 0 14px;
+    margin: 7px 2px 0 0;
+    border: 0;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    background: #F3EDF7;
+    color: #49454F;
+}
+QTabBar::tab:selected {
+    background: #FAF6FF;
+    color: #1D1B20;
+}
+QTabBar::tab:hover:!selected {
+    background: #ECE6F0;
+}
+QToolButton#newTabBtn {
+    background: transparent;
+    border: 0;
+    border-radius: 16px;
+    min-width: 32px;
+    min-height: 32px;
+    margin-top: 8px;
+}
+QToolButton#newTabBtn:hover { background: rgba(103, 80, 164, 0.10); }
+QTabBar::close-button {
+    subcontrol-position: right;
+    margin-right: 8px;
+}
 """
 
 
@@ -415,6 +457,11 @@ ICON_SVGS = {
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
         '<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2'
         ' s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>'
+        "</svg>"
+    ),
+    "add": (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{c}">'
+        '<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>'
         "</svg>"
     ),
 }
@@ -467,6 +514,15 @@ def _make_nav_button(icon_name: str, tooltip: str) -> QToolButton:
     return btn
 
 
+class BrowserTab(QWebEngineView):
+    def __init__(self, window: BrowserWindow) -> None:
+        super().__init__()
+        self.window = window
+
+    def createWindow(self, _type: QWebEngineView.WebWindowType) -> QWebEngineView:
+        return self.window.add_tab(switch_to=True)
+
+
 class BrowserWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -475,27 +531,23 @@ class BrowserWindow(QMainWindow):
         self.resize(1200, 800)
         self.setStyleSheet(WINDOW_QSS)
 
-        self.web_view = QWebEngineView()
         self._home_html = render_home_html()
 
         self._build_chrome()
         self._build_central()
 
-        self.web_view.urlChanged.connect(self.update_address_bar)
-        self.web_view.titleChanged.connect(self.update_window_title)
-
-        self.load_home()
+        self.add_tab(switch_to=True)
 
     # ------------------------------------------------------------------ chrome
     def _build_chrome(self) -> None:
         self.back_btn = _make_nav_button("arrow_back", "Back")
-        self.back_btn.clicked.connect(self.web_view.back)
+        self.back_btn.clicked.connect(lambda: self.active_web_view().back())
 
         self.forward_btn = _make_nav_button("arrow_forward", "Forward")
-        self.forward_btn.clicked.connect(self.web_view.forward)
+        self.forward_btn.clicked.connect(lambda: self.active_web_view().forward())
 
         self.reload_btn = _make_nav_button("refresh", "Reload")
-        self.reload_btn.clicked.connect(self.web_view.reload)
+        self.reload_btn.clicked.connect(lambda: self.active_web_view().reload())
 
         address_pill = self._build_address_pill()
 
@@ -585,17 +637,62 @@ class BrowserWindow(QMainWindow):
         layout = QVBoxLayout(page_container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        self.tabs = QTabWidget()
+        self.tabs.setObjectName("tabs")
+        self.tabs.setDocumentMode(True)
+        self.tabs.setMovable(True)
+        self.tabs.setTabsClosable(True)
+        self.tabs.currentChanged.connect(self._on_current_tab_changed)
+        self.tabs.tabCloseRequested.connect(self.close_tab)
+
+        self.new_tab_btn = QToolButton()
+        self.new_tab_btn.setObjectName("newTabBtn")
+        self.new_tab_btn.setIcon(svg_icon("add"))
+        self.new_tab_btn.setIconSize(QSize(20, 20))
+        self.new_tab_btn.setToolTip("New tab")
+        self.new_tab_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.new_tab_btn.setAutoRaise(True)
+        self.new_tab_btn.clicked.connect(lambda: self.add_tab(switch_to=True))
+        self.tabs.setCornerWidget(self.new_tab_btn, Qt.Corner.TopRightCorner)
+
         layout.addWidget(self.chrome_bar)
-        layout.addWidget(self.web_view)
+        layout.addWidget(self.tabs)
         self.setCentralWidget(page_container)
 
     # --------------------------------------------------------------- behaviour
     def open_address(self) -> None:
         self.load_url(self.address_bar.text())
 
-    def load_home(self) -> None:
-        self.web_view.setHtml(self._home_html, QUrl(HOME_URL))
-        self.address_bar.setText("")
+    def add_tab(self, switch_to: bool = False) -> BrowserTab:
+        view = BrowserTab(self)
+        view.urlChanged.connect(lambda url, tab=view: self.update_address_bar(tab, url))
+        view.titleChanged.connect(lambda title, tab=view: self.update_tab_title(tab, title))
+        index = self.tabs.addTab(view, APP_TITLE)
+        self.load_home(view)
+        if switch_to:
+            self.tabs.setCurrentIndex(index)
+        return view
+
+    def close_tab(self, index: int) -> None:
+        if self.tabs.count() == 1:
+            self.load_home(self.active_web_view())
+            return
+
+        tab = self.tabs.widget(index)
+        self.tabs.removeTab(index)
+        tab.deleteLater()
+
+    def active_web_view(self) -> BrowserTab:
+        tab = self.tabs.currentWidget()
+        if not isinstance(tab, BrowserTab):
+            return self.add_tab(switch_to=True)
+        return tab
+
+    def load_home(self, view: BrowserTab | None = None) -> None:
+        target = view or self.active_web_view()
+        target.setHtml(self._home_html, QUrl(HOME_URL))
+        if target is self.active_web_view():
+            self.address_bar.setText("")
 
     def load_url(self, raw_url: str) -> None:
         url = raw_url.strip()
@@ -609,11 +706,27 @@ class BrowserWindow(QMainWindow):
         if not QUrl(url).scheme():
             url = f"https://{url}"
 
-        self.web_view.setUrl(QUrl(url))
+        self.active_web_view().setUrl(QUrl(url))
 
-    def update_address_bar(self, url: QUrl) -> None:
+    def update_address_bar(self, view: BrowserTab, url: QUrl) -> None:
+        if view is not self.active_web_view():
+            return
         self.address_bar.setText(url.toString())
         self.star_btn.setChecked(False)
+
+    def update_tab_title(self, view: BrowserTab, title: str) -> None:
+        index = self.tabs.indexOf(view)
+        if index != -1:
+            self.tabs.setTabText(index, title or APP_TITLE)
+        if view is self.active_web_view():
+            self.update_window_title(title)
+
+    def _on_current_tab_changed(self, _index: int) -> None:
+        view = self.active_web_view()
+        url = view.url().toString()
+        self.address_bar.setText("" if url == HOME_URL else url)
+        self.star_btn.setChecked(False)
+        self.update_window_title(view.title())
 
     def update_window_title(self, title: str) -> None:
         self.setWindowTitle(title or APP_TITLE)
