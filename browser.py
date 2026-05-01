@@ -7,8 +7,19 @@ from html import escape
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from PyQt6.QtCore import QByteArray, QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, QSize, Qt, QUrl
-from PyQt6.QtGui import QIcon, QPainter, QPixmap
+from PyQt6.QtCore import (
+    QByteArray,
+    QEasingCurve,
+    QEvent,
+    QParallelAnimationGroup,
+    QPoint,
+    QPropertyAnimation,
+    QRect,
+    QSize,
+    Qt,
+    QUrl,
+)
+from PyQt6.QtGui import QIcon, QMouseEvent, QPainter, QPixmap
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QApplication,
@@ -672,7 +683,84 @@ class BrowserTab(QWebEngineView):
         return self.window.add_tab(switch_to=True)
 
 
+class TabStrip(QWidget):
+    """Tab bar that doubles as the window's drag handle.
+
+    Holding LMB on empty space (anywhere not over an interactive child) starts
+    a system move so the user can drag the frameless window. Double-clicking
+    the same area toggles maximize/restore, matching the standard Windows
+    titlebar behaviour.
+    """
+
+    def __init__(self, browser_window: BrowserWindow) -> None:
+        super().__init__()
+        self._browser_window = browser_window
+        self._press_pos: QPoint | None = None
+        self._press_global: QPoint | None = None
+        self._dragging = False
+
+    def _is_drag_target(self, pos: QPoint) -> bool:
+        child = self.childAt(pos)
+        widget: QWidget | None = child
+        while widget is not None and widget is not self:
+            if isinstance(widget, (TabButton, QToolButton, QLineEdit)):
+                return False
+            widget = widget.parentWidget()
+        return True
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self._is_drag_target(
+            event.position().toPoint()
+        ):
+            self._press_pos = event.position().toPoint()
+            self._press_global = event.globalPosition().toPoint()
+            self._dragging = False
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        if (
+            self._press_pos is not None
+            and event.buttons() & Qt.MouseButton.LeftButton
+            and not self._dragging
+        ):
+            delta = event.globalPosition().toPoint() - self._press_global
+            if delta.manhattanLength() >= QApplication.startDragDistance():
+                self._dragging = True
+                self._begin_window_move()
+                event.accept()
+                return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        self._press_pos = None
+        self._press_global = None
+        self._dragging = False
+        super().mouseReleaseEvent(event)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self._is_drag_target(
+            event.position().toPoint()
+        ):
+            self._browser_window.toggle_window_maximized()
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
+    def _begin_window_move(self) -> None:
+        window = self._browser_window
+        if window.isMaximized():
+            window.showNormal()
+        handle = window.windowHandle()
+        if handle is not None:
+            handle.startSystemMove()
+
+
 class TabButton(QWidget):
+    DEFAULT_WIDTH = 260
+    DEFAULT_HEIGHT = 48
+
     def __init__(
         self,
         index: int,
@@ -682,8 +770,12 @@ class TabButton(QWidget):
         super().__init__()
         self.index = index
         self.window = window
+        self.is_closing = False
         self.setObjectName("browserTab")
-        self.setFixedSize(260, 48)
+        self.setFixedHeight(self.DEFAULT_HEIGHT)
+        self.setMinimumWidth(0)
+        self.setMaximumWidth(self.DEFAULT_WIDTH)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QHBoxLayout(self)
@@ -707,11 +799,19 @@ class TabButton(QWidget):
         self.close_btn.setIconSize(QSize(16, 16))
         self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.close_btn.setAutoRaise(True)
-        self.close_btn.clicked.connect(lambda: self.window.close_tab(self.index))
+        self.close_btn.clicked.connect(self._on_close_clicked)
         layout.addWidget(self.close_btn)
         self.set_title(title)
 
+    def _on_close_clicked(self) -> None:
+        if self.is_closing:
+            return
+        self.window.close_tab(self.index)
+
     def mousePressEvent(self, event) -> None:
+        if self.is_closing:
+            super().mousePressEvent(event)
+            return
         if event.button() == Qt.MouseButton.LeftButton:
             self.window.select_tab(self.index)
         super().mousePressEvent(event)
@@ -752,6 +852,10 @@ class BrowserWindow(QMainWindow):
         self._history: list[HistoryEntry] = []
         self._recording_history = True
         self._tab_animations: list[QParallelAnimationGroup] = []
+        self._window_anim: QParallelAnimationGroup | None = None
+        self._normal_geometry: QRect | None = None
+        self._is_minimizing = False
+        self._suppress_state_anim = False
         self.current_tab_index = -1
 
         self._build_chrome()
@@ -882,7 +986,7 @@ class BrowserWindow(QMainWindow):
         layout = QVBoxLayout(shell)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        tab_strip = QWidget()
+        tab_strip = TabStrip(self)
         tab_strip.setObjectName("tabStrip")
         tab_strip.setFixedHeight(68)
         tab_layout = QHBoxLayout(tab_strip)
@@ -912,7 +1016,7 @@ class BrowserWindow(QMainWindow):
         window_layout.setContentsMargins(0, 0, 0, 0)
         window_layout.setSpacing(18)
         for text, slot in (
-            ("–", self.showMinimized),
+            ("–", self.minimize_with_animation),
             ("▢", self.toggle_window_maximized),
             ("×", self.close),
         ):
@@ -944,11 +1048,46 @@ class BrowserWindow(QMainWindow):
         index = self.pages.addWidget(view)
         tab_button = TabButton(index, APP_TITLE, self)
         self.tab_buttons_layout.addWidget(tab_button)
+        self._animate_tab_open(tab_button)
         self.load_home(view)
         self._sync_tab_buttons()
         if switch_to:
             self.select_tab(index)
         return view
+
+    def _animate_tab_open(self, tab_button: TabButton) -> None:
+        target_width = tab_button.maximumWidth() or TabButton.DEFAULT_WIDTH
+        tab_button.setMaximumWidth(0)
+
+        opacity = QGraphicsOpacityEffect(tab_button)
+        opacity.setOpacity(0.0)
+        tab_button.setGraphicsEffect(opacity)
+
+        grow = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        grow.setDuration(260)
+        grow.setStartValue(0)
+        grow.setEndValue(target_width)
+        grow.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        fade = QPropertyAnimation(opacity, b"opacity", self)
+        fade.setDuration(220)
+        fade.setStartValue(0.0)
+        fade.setEndValue(1.0)
+        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(grow)
+        group.addAnimation(fade)
+        self._tab_animations.append(group)
+
+        def _finalize() -> None:
+            if group in self._tab_animations:
+                self._tab_animations.remove(group)
+            tab_button.setGraphicsEffect(None)
+            tab_button.setMaximumWidth(target_width)
+
+        group.finished.connect(_finalize)
+        group.start()
 
     def close_tab(self, index: int) -> None:
         if self.pages.count() == 1:
@@ -958,53 +1097,72 @@ class BrowserWindow(QMainWindow):
         view = self.pages.widget(index)
         tab_button = self.tab_buttons_layout.itemAt(index).widget()
         if not isinstance(tab_button, TabButton):
-            self._remove_tab(index, view)
+            self._remove_tab(tab_button, view)
             return
+        if tab_button.is_closing:
+            return
+        tab_button.is_closing = True
+        tab_button.close_btn.setEnabled(False)
+
+        if index == self.current_tab_index and self.pages.count() > 1:
+            next_index = index - 1 if index == self.pages.count() - 1 else index + 1
+            self.select_tab(next_index)
 
         opacity = QGraphicsOpacityEffect(tab_button)
         tab_button.setGraphicsEffect(opacity)
+        start_width = max(tab_button.width(), 1)
         tab_button.setMinimumWidth(0)
-        tab_button.setMaximumWidth(tab_button.width())
+        tab_button.setMaximumWidth(start_width)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(160)
+        fade.setDuration(220)
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
-        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+        fade.setEasingCurve(QEasingCurve.Type.InOutCubic)
 
         shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
-        shrink.setDuration(180)
-        shrink.setStartValue(tab_button.width())
+        shrink.setDuration(260)
+        shrink.setStartValue(start_width)
         shrink.setEndValue(0)
-        shrink.setEasingCurve(QEasingCurve.Type.OutCubic)
+        shrink.setEasingCurve(QEasingCurve.Type.InOutCubic)
 
         group = QParallelAnimationGroup(self)
         group.addAnimation(fade)
         group.addAnimation(shrink)
         self._tab_animations.append(group)
-        group.finished.connect(lambda: self._finish_close_animation(group, index, view))
+        group.finished.connect(
+            lambda btn=tab_button, v=view: self._finish_close_animation(group, btn, v)
+        )
         group.start()
 
     def _finish_close_animation(
         self,
         animation: QParallelAnimationGroup,
-        index: int,
+        tab_button: TabButton,
         view: QWidget,
     ) -> None:
-        self._tab_animations.remove(animation)
-        self._remove_tab(index, view)
+        if animation in self._tab_animations:
+            self._tab_animations.remove(animation)
+        self._remove_tab(tab_button, view)
 
-    def _remove_tab(self, index: int, view: QWidget) -> None:
-        item = self.tab_buttons_layout.takeAt(index)
-        if item:
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-        self.pages.removeWidget(view)
+    def _remove_tab(self, tab_button: QWidget, view: QWidget) -> None:
+        button_index = self.tab_buttons_layout.indexOf(tab_button)
+        if button_index >= 0:
+            item = self.tab_buttons_layout.takeAt(button_index)
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.setParent(None)
+                    widget.deleteLater()
+        page_index = self.pages.indexOf(view)
+        if page_index >= 0:
+            self.pages.removeWidget(view)
         view.deleteLater()
-        if self.current_tab_index >= self.pages.count():
-            self.current_tab_index = self.pages.count() - 1
-        self.select_tab(max(0, self.current_tab_index))
+        new_count = self.pages.count()
+        if self.current_tab_index >= new_count:
+            self.current_tab_index = new_count - 1
+        if new_count > 0:
+            self.select_tab(max(0, self.current_tab_index))
         self._sync_tab_buttons()
 
     def select_tab(self, index: int) -> None:
@@ -1108,6 +1266,107 @@ class BrowserWindow(QMainWindow):
             self._history[-1].title = title or url
             return
         self._history.append(HistoryEntry(title=title or url, url=url))
+
+    # ----------------------------------------------------------- window anim
+    def minimize_with_animation(self) -> None:
+        """Animate the window shrinking and fading before minimizing.
+
+        Frameless windows on most desktop environments do not get the system
+        minimize animation for free, so we fake a Windows-style slide+fade
+        toward the bottom of the screen before actually minimizing.
+        """
+        if self._is_minimizing or self.isMinimized():
+            return
+        self._is_minimizing = True
+
+        if not self.isMaximized() and not self.isFullScreen():
+            self._normal_geometry = self.geometry()
+        start_geom = self.geometry()
+        target_geom = QRect(
+            start_geom.x() + start_geom.width() // 6,
+            start_geom.y() + start_geom.height(),
+            max(1, start_geom.width() * 2 // 3),
+            max(1, start_geom.height() // 2),
+        )
+
+        geo_anim = QPropertyAnimation(self, b"geometry", self)
+        geo_anim.setDuration(220)
+        geo_anim.setStartValue(start_geom)
+        geo_anim.setEndValue(target_geom)
+        geo_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+
+        op_anim = QPropertyAnimation(self, b"windowOpacity", self)
+        op_anim.setDuration(220)
+        op_anim.setStartValue(1.0)
+        op_anim.setEndValue(0.0)
+        op_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(geo_anim)
+        group.addAnimation(op_anim)
+        self._window_anim = group
+
+        def _finalize() -> None:
+            # Stay at the small/transparent geometry so when the window manager
+            # later restores us, _animate_restore_from_minimized expands cleanly
+            # without a flash of the full-size window.
+            self._suppress_state_anim = True
+            super(BrowserWindow, self).showMinimized()
+            self._is_minimizing = False
+            self._suppress_state_anim = False
+
+        group.finished.connect(_finalize)
+        group.start()
+
+    def _animate_restore_from_minimized(self) -> None:
+        target_geom = self._normal_geometry or self.geometry()
+        start_geom = QRect(
+            target_geom.x() + target_geom.width() // 6,
+            target_geom.y() + target_geom.height() // 4,
+            max(1, target_geom.width() * 2 // 3),
+            max(1, target_geom.height() // 2),
+        )
+        self.setWindowOpacity(0.0)
+        self.setGeometry(start_geom)
+
+        geo_anim = QPropertyAnimation(self, b"geometry", self)
+        geo_anim.setDuration(240)
+        geo_anim.setStartValue(start_geom)
+        geo_anim.setEndValue(target_geom)
+        geo_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        op_anim = QPropertyAnimation(self, b"windowOpacity", self)
+        op_anim.setDuration(240)
+        op_anim.setStartValue(0.0)
+        op_anim.setEndValue(1.0)
+        op_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(geo_anim)
+        group.addAnimation(op_anim)
+        self._window_anim = group
+        group.start()
+
+    def changeEvent(self, event) -> None:  # type: ignore[override]
+        if event.type() == QEvent.Type.WindowStateChange:
+            old_state = event.oldState()
+            new_state = self.windowState()
+            was_minimized = bool(old_state & Qt.WindowState.WindowMinimized)
+            is_minimized = bool(new_state & Qt.WindowState.WindowMinimized)
+            if (
+                was_minimized
+                and not is_minimized
+                and not self._suppress_state_anim
+            ):
+                self._animate_restore_from_minimized()
+            if not is_minimized and not self.isMaximized() and not self.isFullScreen():
+                self._normal_geometry = self.geometry()
+        super().changeEvent(event)
+
+    def showEvent(self, event) -> None:  # type: ignore[override]
+        super().showEvent(event)
+        if self._normal_geometry is None and not self.isMaximized():
+            self._normal_geometry = self.geometry()
 
     @staticmethod
     def is_search_query(value: str) -> bool:
