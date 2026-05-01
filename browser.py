@@ -19,7 +19,15 @@ from PyQt6.QtCore import (
     Qt,
     QUrl,
 )
-from PyQt6.QtGui import QIcon, QMouseEvent, QPainter, QPixmap
+from PyQt6.QtGui import (
+    QCursor,
+    QIcon,
+    QKeySequence,
+    QMouseEvent,
+    QPainter,
+    QPixmap,
+    QShortcut,
+)
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QApplication,
@@ -36,6 +44,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from PyQt6.QtWebEngineCore import QWebEnginePage
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 
 
@@ -550,6 +559,35 @@ QToolButton[windowControl="true"] {
 QToolButton[windowControl="true"]:hover {
     background: rgba(29, 27, 32, 0.08);
 }
+QFrame#findBar {
+    background: #FFFFFF;
+    border: 1px solid #CAC4D0;
+    border-radius: 14px;
+}
+QLineEdit#findInput {
+    border: 0;
+    background: transparent;
+    color: #1D1B20;
+    font-size: 14px;
+    padding: 4px 6px;
+}
+QLabel#findCount {
+    color: #49454F;
+    font-size: 12px;
+    padding: 0 6px;
+}
+QToolButton#findPrev, QToolButton#findNext, QToolButton#findClose {
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 18px;
+    color: #1D1B20;
+}
+QToolButton#findPrev:hover, QToolButton#findNext:hover, QToolButton#findClose:hover {
+    background: rgba(103, 80, 164, 0.10);
+}
 """
 
 
@@ -771,6 +809,7 @@ class TabButton(QWidget):
         self.index = index
         self.window = window
         self.is_closing = False
+        self._has_site_icon = False
         self.setObjectName("browserTab")
         self.setFixedHeight(self.DEFAULT_HEIGHT)
         self.setMinimumWidth(0)
@@ -827,10 +866,32 @@ class TabButton(QWidget):
             self.icon_label.setText("")
             self.icon_label.setStyleSheet("background: transparent;")
             self.icon_label.setPixmap(svg_icon("history").pixmap(28, 28))
+        elif self._has_site_icon:
+            # Real favicon already set via set_icon(); leave it alone.
+            return
         else:
             self.icon_label.setPixmap(QPixmap())
             self.icon_label.setStyleSheet("")
             self.icon_label.setText("m")
+
+    def set_icon(self, icon: QIcon) -> None:
+        if icon is None or icon.isNull():
+            self._has_site_icon = False
+            self.icon_label.setPixmap(QPixmap())
+            self.icon_label.setStyleSheet("")
+            self.icon_label.setText("m")
+            return
+        pix = icon.pixmap(20, 20)
+        if pix.isNull():
+            self._has_site_icon = False
+            self.icon_label.setPixmap(QPixmap())
+            self.icon_label.setStyleSheet("")
+            self.icon_label.setText("m")
+            return
+        self._has_site_icon = True
+        self.icon_label.setText("")
+        self.icon_label.setStyleSheet("background: transparent;")
+        self.icon_label.setPixmap(pix)
 
 
 @dataclass
@@ -839,7 +900,123 @@ class HistoryEntry:
     url: str
 
 
+class FindBar(QFrame):
+    """Floating Ctrl+F panel anchored to the top-right of the page area."""
+
+    def __init__(self, browser_window: BrowserWindow, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._browser_window = browser_window
+        self.setObjectName("findBar")
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setFixedHeight(44)
+        self.setMinimumWidth(360)
+        self.hide()
+
+        self.input = QLineEdit(self)
+        self.input.setObjectName("findInput")
+        self.input.setPlaceholderText("Find on page")
+        self.input.textChanged.connect(self._on_text_changed)
+        self.input.returnPressed.connect(self.find_next)
+
+        self.count_label = QLabel("", self)
+        self.count_label.setObjectName("findCount")
+
+        self.prev_btn = QToolButton(self)
+        self.prev_btn.setObjectName("findPrev")
+        self.prev_btn.setText("‹")
+        self.prev_btn.setToolTip("Previous match (Shift+Enter)")
+        self.prev_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prev_btn.setAutoRaise(True)
+        self.prev_btn.clicked.connect(self.find_prev)
+
+        self.next_btn = QToolButton(self)
+        self.next_btn.setObjectName("findNext")
+        self.next_btn.setText("›")
+        self.next_btn.setToolTip("Next match (Enter)")
+        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.next_btn.setAutoRaise(True)
+        self.next_btn.clicked.connect(self.find_next)
+
+        self.close_btn = QToolButton(self)
+        self.close_btn.setObjectName("findClose")
+        self.close_btn.setText("×")
+        self.close_btn.setToolTip("Close (Esc)")
+        self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.close_btn.setAutoRaise(True)
+        self.close_btn.clicked.connect(self.hide_panel)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 6, 8, 6)
+        layout.setSpacing(6)
+        layout.addWidget(self.input, stretch=1)
+        layout.addWidget(self.count_label)
+        layout.addWidget(self.prev_btn)
+        layout.addWidget(self.next_btn)
+        layout.addWidget(self.close_btn)
+
+    def show_panel(self) -> None:
+        self.show()
+        self.raise_()
+        self.input.setFocus()
+        self.input.selectAll()
+        if self.input.text():
+            self._search(self.input.text())
+
+    def hide_panel(self) -> None:
+        view = self._browser_window.active_web_view()
+        if view is not None:
+            view.findText("")  # clear highlights
+            view.setFocus()
+        self.count_label.setText("")
+        self.hide()
+
+    def _on_text_changed(self, text: str) -> None:
+        self._search(text)
+
+    def _search(self, text: str, backward: bool = False) -> None:
+        view = self._browser_window.active_web_view()
+        if view is None:
+            return
+        flags = QWebEnginePage.FindFlag(0)
+        if backward:
+            flags |= QWebEnginePage.FindFlag.FindBackward
+        if not text:
+            view.findText("")
+            self.count_label.setText("")
+            return
+        view.findText(text, flags, self._on_find_result)
+
+    def _on_find_result(self, result) -> None:
+        # Qt 6.7+ passes QWebEngineFindTextResult; older returns bool. Be defensive.
+        active = getattr(result, "activeMatch", None)
+        total = getattr(result, "numberOfMatches", None)
+        if callable(active) and callable(total):
+            a, t = active(), total()
+            self.count_label.setText(f"{a}/{t}" if t else "no results")
+        else:
+            self.count_label.setText("" if result else "no results")
+
+    def find_next(self) -> None:
+        self._search(self.input.text(), backward=False)
+
+    def find_prev(self) -> None:
+        self._search(self.input.text(), backward=True)
+
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            self.hide_panel()
+            event.accept()
+            return
+        if event.key() == Qt.Key.Key_Return and event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.find_prev()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class BrowserWindow(QMainWindow):
+    RESIZE_MARGIN = 6
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -847,19 +1024,30 @@ class BrowserWindow(QMainWindow):
         self.setWindowTitle(APP_TITLE)
         self.resize(1200, 800)
         self.setStyleSheet(WINDOW_QSS)
+        self.setMouseTracking(True)
 
         self._home_html = render_home_html()
         self._history: list[HistoryEntry] = []
+        self._closed_tabs: list[str] = []
         self._recording_history = True
         self._tab_animations: list[QParallelAnimationGroup] = []
         self._window_anim: QParallelAnimationGroup | None = None
         self._normal_geometry: QRect | None = None
         self._is_minimizing = False
         self._suppress_state_anim = False
+        self._current_resize_edge: int = 0
+        self._has_resize_cursor = False
+        self._is_resizing = False
+        self._find_bar: FindBar | None = None
         self.current_tab_index = -1
 
         self._build_chrome()
         self._build_central()
+
+        self._install_shortcuts()
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
 
         self.add_tab(switch_to=True)
 
@@ -1045,6 +1233,7 @@ class BrowserWindow(QMainWindow):
         view = BrowserTab(self)
         view.urlChanged.connect(lambda url, tab=view: self.update_address_bar(tab, url))
         view.titleChanged.connect(lambda title, tab=view: self.update_tab_title(tab, title))
+        view.iconChanged.connect(lambda icon, tab=view: self.update_tab_icon(tab, icon))
         index = self.pages.addWidget(view)
         tab_button = TabButton(index, APP_TITLE, self)
         self.tab_buttons_layout.addWidget(tab_button)
@@ -1054,6 +1243,17 @@ class BrowserWindow(QMainWindow):
         if switch_to:
             self.select_tab(index)
         return view
+
+    def update_tab_icon(self, view: BrowserTab, icon: QIcon) -> None:
+        index = self.pages.indexOf(view)
+        if index < 0:
+            return
+        widget = self.tab_buttons_layout.itemAt(index)
+        if widget is None:
+            return
+        button = widget.widget()
+        if isinstance(button, TabButton):
+            button.set_icon(icon)
 
     def _animate_tab_open(self, tab_button: TabButton) -> None:
         target_width = tab_button.maximumWidth() or TabButton.DEFAULT_WIDTH
@@ -1097,12 +1297,14 @@ class BrowserWindow(QMainWindow):
         view = self.pages.widget(index)
         tab_button = self.tab_buttons_layout.itemAt(index).widget()
         if not isinstance(tab_button, TabButton):
+            self._remember_closed_tab(view)
             self._remove_tab(tab_button, view)
             return
         if tab_button.is_closing:
             return
         tab_button.is_closing = True
         tab_button.close_btn.setEnabled(False)
+        self._remember_closed_tab(view)
 
         if index == self.current_tab_index and self.pages.count() > 1:
             next_index = index - 1 if index == self.pages.count() - 1 else index + 1
@@ -1266,6 +1468,232 @@ class BrowserWindow(QMainWindow):
             self._history[-1].title = title or url
             return
         self._history.append(HistoryEntry(title=title or url, url=url))
+
+    def _remember_closed_tab(self, view: QWidget) -> None:
+        if not isinstance(view, QWebEngineView):
+            return
+        url = view.url().toString()
+        if not url or url == HOME_URL:
+            return
+        self._closed_tabs.append(url)
+        del self._closed_tabs[:-20]
+
+    # ---------------------------------------------------------------- shortcuts
+    def _install_shortcuts(self) -> None:
+        bindings = (
+            ("Ctrl+T", lambda: self.add_tab(switch_to=True)),
+            ("Ctrl+W", self.close_current_tab),
+            ("Ctrl+Shift+T", self.reopen_last_closed_tab),
+            ("Ctrl+Tab", lambda: self.cycle_tab(1)),
+            ("Ctrl+Shift+Tab", lambda: self.cycle_tab(-1)),
+            ("Ctrl+L", self.focus_address_bar),
+            ("Ctrl+R", lambda: self.active_web_view().reload()),
+            ("F5", lambda: self.active_web_view().reload()),
+            ("Ctrl+Shift+R", self._hard_reload),
+            ("Ctrl+F", self.toggle_find_bar),
+            ("Esc", self._on_escape),
+            ("Alt+Left", lambda: self.active_web_view().back()),
+            ("Alt+Right", lambda: self.active_web_view().forward()),
+            ("Ctrl++", self.zoom_in),
+            ("Ctrl+=", self.zoom_in),
+            ("Ctrl+-", self.zoom_out),
+            ("Ctrl+0", self.zoom_reset),
+            ("Ctrl+Q", self.close),
+            ("F11", self.toggle_fullscreen),
+        )
+        for seq, slot in bindings:
+            sc = QShortcut(QKeySequence(seq), self)
+            sc.setContext(Qt.ShortcutContext.WindowShortcut)
+            sc.activated.connect(slot)
+        for n in range(1, 9):
+            sc = QShortcut(QKeySequence(f"Ctrl+{n}"), self)
+            sc.setContext(Qt.ShortcutContext.WindowShortcut)
+            sc.activated.connect(lambda i=n - 1: self.select_tab(i))
+        last = QShortcut(QKeySequence("Ctrl+9"), self)
+        last.setContext(Qt.ShortcutContext.WindowShortcut)
+        last.activated.connect(lambda: self.select_tab(self.pages.count() - 1))
+
+    def close_current_tab(self) -> None:
+        if self.current_tab_index >= 0:
+            self.close_tab(self.current_tab_index)
+
+    def reopen_last_closed_tab(self) -> None:
+        if not self._closed_tabs:
+            return
+        url = self._closed_tabs.pop()
+        view = self.add_tab(switch_to=True)
+        view.setUrl(QUrl(url))
+
+    def cycle_tab(self, delta: int) -> None:
+        count = self.pages.count()
+        if count == 0:
+            return
+        new = (self.current_tab_index + delta) % count
+        self.select_tab(new)
+
+    def focus_address_bar(self) -> None:
+        self.address_bar.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        self.address_bar.selectAll()
+
+    def _hard_reload(self) -> None:
+        view = self.active_web_view()
+        page = view.page()
+        if page is not None:
+            page.triggerAction(QWebEnginePage.WebAction.ReloadAndBypassCache)
+
+    def zoom_in(self) -> None:
+        view = self.active_web_view()
+        view.setZoomFactor(min(5.0, view.zoomFactor() + 0.1))
+
+    def zoom_out(self) -> None:
+        view = self.active_web_view()
+        view.setZoomFactor(max(0.25, view.zoomFactor() - 0.1))
+
+    def zoom_reset(self) -> None:
+        self.active_web_view().setZoomFactor(1.0)
+
+    def toggle_fullscreen(self) -> None:
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
+
+    def _on_escape(self) -> None:
+        if self._find_bar is not None and self._find_bar.isVisible():
+            self._find_bar.hide_panel()
+            return
+        if self.isFullScreen():
+            self.showNormal()
+
+    # ------------------------------------------------------------------- find
+    def _ensure_find_bar(self) -> FindBar:
+        if self._find_bar is None:
+            self._find_bar = FindBar(self, self.pages)
+            self._reposition_find_bar()
+        return self._find_bar
+
+    def toggle_find_bar(self) -> None:
+        bar = self._ensure_find_bar()
+        if bar.isVisible():
+            bar.hide_panel()
+        else:
+            self._reposition_find_bar()
+            bar.show_panel()
+
+    def _reposition_find_bar(self) -> None:
+        if self._find_bar is None:
+            return
+        bar = self._find_bar
+        host = self.pages
+        margin = 12
+        width = max(bar.minimumWidth(), 380)
+        x = max(0, host.width() - width - margin)
+        bar.setGeometry(x, margin, width, bar.height())
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._reposition_find_bar()
+
+    # -------------------------------------------------------------- resize edge
+    def _hit_test_edge(self, gpos: QPoint) -> int:
+        """Return a bitmask of Qt.Edge values; 0 means not on any edge."""
+        if self.isMaximized() or self.isFullScreen() or self.isMinimized():
+            return 0
+        rect = self.frameGeometry()
+        x = gpos.x() - rect.x()
+        y = gpos.y() - rect.y()
+        w = rect.width()
+        h = rect.height()
+        m = self.RESIZE_MARGIN
+        if not (0 <= x < w and 0 <= y < h):
+            return 0
+        mask = 0
+        if y < m:
+            mask |= int(Qt.Edge.TopEdge.value)
+        if y >= h - m:
+            mask |= int(Qt.Edge.BottomEdge.value)
+        if x < m:
+            mask |= int(Qt.Edge.LeftEdge.value)
+        if x >= w - m:
+            mask |= int(Qt.Edge.RightEdge.value)
+        return mask
+
+    def _cursor_for_edge(self, mask: int):
+        if not mask:
+            return None
+        top = bool(mask & int(Qt.Edge.TopEdge.value))
+        bottom = bool(mask & int(Qt.Edge.BottomEdge.value))
+        left = bool(mask & int(Qt.Edge.LeftEdge.value))
+        right = bool(mask & int(Qt.Edge.RightEdge.value))
+        if (top and left) or (bottom and right):
+            return Qt.CursorShape.SizeFDiagCursor
+        if (top and right) or (bottom and left):
+            return Qt.CursorShape.SizeBDiagCursor
+        if left or right:
+            return Qt.CursorShape.SizeHorCursor
+        if top or bottom:
+            return Qt.CursorShape.SizeVerCursor
+        return None
+
+    @staticmethod
+    def _mask_to_edges(mask: int):
+        """Combine Qt.Edge values according to the bitmask. Returns Qt.Edges."""
+        edges = None
+        for edge in (
+            Qt.Edge.TopEdge,
+            Qt.Edge.BottomEdge,
+            Qt.Edge.LeftEdge,
+            Qt.Edge.RightEdge,
+        ):
+            if mask & int(edge.value):
+                edges = edge if edges is None else (edges | edge)
+        return edges
+
+    def _update_resize_cursor(self, mask: int) -> None:
+        if mask == self._current_resize_edge:
+            return
+        self._current_resize_edge = mask
+        shape = self._cursor_for_edge(mask)
+        app = QApplication.instance()
+        if app is None:
+            return
+        # Pop only the override we previously installed so we don't trample
+        # over wait cursors set by other code paths.
+        if self._has_resize_cursor:
+            app.restoreOverrideCursor()
+            self._has_resize_cursor = False
+        if shape is not None:
+            app.setOverrideCursor(QCursor(shape))
+            self._has_resize_cursor = True
+
+    def eventFilter(self, obj, event) -> bool:  # type: ignore[override]
+        et = event.type()
+        if et == QEvent.Type.MouseMove:
+            try:
+                gpos = event.globalPosition().toPoint()
+            except AttributeError:
+                gpos = event.globalPos()
+            mask = self._hit_test_edge(gpos)
+            self._update_resize_cursor(mask)
+        elif (
+            et == QEvent.Type.MouseButtonPress
+            and getattr(event, "button", lambda: None)() == Qt.MouseButton.LeftButton
+        ):
+            try:
+                gpos = event.globalPosition().toPoint()
+            except AttributeError:
+                gpos = event.globalPos()
+            mask = self._hit_test_edge(gpos)
+            if mask:
+                edges = self._mask_to_edges(mask)
+                handle = self.windowHandle()
+                if handle is not None and edges is not None:
+                    self._is_resizing = True
+                    handle.startSystemResize(edges)
+                    return True
+        elif et == QEvent.Type.MouseButtonRelease:
+            self._is_resizing = False
+        return super().eventFilter(obj, event)
 
     # ----------------------------------------------------------- window anim
     def minimize_with_animation(self) -> None:
