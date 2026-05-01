@@ -1,142 +1,90 @@
 # Minimal Chromium Browser Prototype
 
-Минимальный desktop-браузерный прототип на базе Chromium.
+Минимальный desktop-браузерный прототип на C++ и Qt WebEngine.
 
-Проект реализован как простая оболочка поверх QtWebEngine: используется готовый
-Chromium-based web engine, собственный HTML/JS/rendering engine не создаётся.
+Проект реализован как нативное Qt-приложение поверх Chromium-based
+QtWebEngine: собственный HTML/JS/rendering engine не создаётся.
 
 ## Возможности
 
 - отдельное desktop-приложение;
 - главное окно с web view;
-- минимальная стартовая страница `morphine` со строкой поиска Google;
+- стартовая страница `morphine` со строкой поиска Google;
+- вкладки с кнопками закрытия и открытием новых вкладок;
 - адресная строка;
-- открытие URL по `Enter` или кнопке `Go`;
+- открытие URL по `Enter`;
 - поиск в Google из адресной строки для обычных текстовых запросов;
 - автоматическое добавление `https://`, если протокол не указан;
-- кнопки `Back`, `Forward`, `Reload`;
+- кнопки `Back`, `Forward`, `Reload`, `History`;
 - переход по ссылкам внутри страницы в том же окне;
+- открытие новых окон WebEngine как новых вкладок;
 - обновление адресной строки при навигации;
-- обновление заголовка окна по заголовку текущей страницы;
-- стандартная обработка ошибок загрузки через QtWebEngine без падения приложения.
+- обновление заголовка окна и вкладки по заголовку текущей страницы;
+- история текущей сессии на странице `morphine://history`;
+- восстановление последней закрытой вкладки через `Ctrl+Shift+T`;
+- горячие клавиши для вкладок, адресной строки, перезагрузки, zoom и fullscreen;
+- frameless window с кастомными кнопками свернуть/развернуть/закрыть;
+- изменение размера окна по краям.
 
 ## Стек
 
-- Python 3.10+
-- PyQt6
-- PyQt6-WebEngine / QtWebEngine, Chromium-based engine
+- C++17
+- CMake 3.16+
+- Qt 5 или Qt 6
+- Qt WebEngine / Chromium-based engine
+- Qt Svg
 
-## Зависимости
+## Установка зависимостей
 
-Python-зависимости перечислены в:
+### Ubuntu / Debian
 
-- `requirements.txt`
-- `pyproject.toml`
-
-Минимальный набор:
-
-```text
-PyQt6>=6.7,<7
-PyQt6-WebEngine>=6.7,<7
-```
-
-## Установка
-
-### Linux / macOS
+Qt 6:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+sudo apt update
+sudo apt install -y build-essential cmake ninja-build qt6-base-dev qt6-webengine-dev qt6-svg-dev
 ```
 
-### Windows
+Если в дистрибутиве нет Qt 6 WebEngine, можно собрать с Qt 5:
 
-```powershell
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+```bash
+sudo apt update
+sudo apt install -y build-essential cmake ninja-build qtbase5-dev qtwebengine5-dev libqt5svg5-dev
 ```
 
-Если PowerShell блокирует активацию virtualenv, выполните:
+## Сборка
 
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```bash
+cmake -S . -B build -G Ninja
+cmake --build build
 ```
 
 ## Запуск
 
-### Из исходников
-
 ```bash
-python browser.py
+./build/minimal-browser
 ```
 
-На Windows:
-
-```powershell
-python browser.py
-```
-
-### Как установленный script entrypoint
+## Установка
 
 ```bash
-python -m pip install -e .
-minimal-browser
-```
-
-## Сборка исполняемого файла
-
-Для раннего прототипа обязательная сборка `.exe` не требуется, но её можно
-сделать через PyInstaller.
-
-```bash
-python -m pip install pyinstaller
-pyinstaller --name MinimalBrowser --windowed --onefile browser.py
-```
-
-Готовый файл появится в папке `dist/`.
-
-На Linux может понадобиться запуск без `--windowed`, если нужно видеть
-диагностический вывод:
-
-```bash
-pyinstaller --name MinimalBrowser --onefile browser.py
+cmake --install build
 ```
 
 ## Структура проекта
 
 ```text
 .
-├── browser.py          # основной код приложения
-├── pyproject.toml      # метаданные и зависимости проекта
-├── requirements.txt    # зависимости для pip
+├── CMakeLists.txt      # CMake-конфигурация C++/Qt приложения
+├── src/main.cpp        # основной код браузера
 └── README.md           # инструкция
 ```
 
-## Что не входит в первую версию
+## Что не входит в первую C++ версию
 
-- вкладки;
-- закладки;
-- история посещений как отдельный UI;
+- постоянное хранилище истории;
 - менеджер загрузок;
 - расширения;
 - режим инкогнито;
-- профили пользователей;
-- сохранение паролей;
 - синхронизация;
 - собственный web engine.
-
-## Дальнейшее развитие
-
-Текущая архитектура специально оставлена простой, чтобы позже добавить:
-
-- вкладки;
-- историю;
-- закладки;
-- страницу настроек;
-- домашнюю страницу;
-- загрузки;
-- поиск по странице.
