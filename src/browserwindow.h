@@ -14,11 +14,12 @@ public:
     explicit BrowserWindow(QWidget *parent = nullptr);
 
 private slots:
-    void addTab(const QUrl &url = QUrl());
+    void addTab();
     void closeTab(int index);
     void updateWindowTitle();
 
 private:
+    void addTabWithUrl(const QUrl &url);
     BrowserTab *currentTab() const;
     BrowserTab *tabAt(int index) const;
     void wireTab(BrowserTab *tab);

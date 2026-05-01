@@ -37,9 +37,7 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     newTabButton->setCursor(Qt::PointingHandCursor);
     tabs_->setCornerWidget(newTabButton, Qt::TopRightCorner);
 
-    connect(newTabButton, &QToolButton::clicked, this, [this] {
-        addTab();
-    });
+    connect(newTabButton, &QToolButton::clicked, this, &BrowserWindow::addTab);
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
     connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
 
@@ -57,7 +55,12 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     addTab();
 }
 
-void BrowserWindow::addTab(const QUrl &url)
+void BrowserWindow::addTab()
+{
+    addTabWithUrl(QUrl());
+}
+
+void BrowserWindow::addTabWithUrl(const QUrl &url)
 {
     auto *tab = new BrowserTab(profile_, this);
     wireTab(tab);

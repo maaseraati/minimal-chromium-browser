@@ -41,7 +41,9 @@ Qt WebEngine, а приложение реализует собственную 
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential cmake ninja-build qt6-base-dev qt6-webengine-dev
+sudo apt install -y build-essential cmake ninja-build pkg-config \
+  qt6-base-dev qt6-webengine-dev qt6-webengine-dev-tools \
+  libqt6webenginecore6-bin libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev
 ```
 
 ### macOS
