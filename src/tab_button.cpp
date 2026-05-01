@@ -224,29 +224,26 @@ void TabButton::paintEvent(QPaintEvent *)
     mixed.setGreenF(base.greenF() + (hover.greenF() - base.greenF()) * m_hoverProgress);
     mixed.setBlueF(base.blueF() + (hover.blueF() - base.blueF()) * m_hoverProgress);
 
+    const qreal r = 12.0;
+    QPainterPath path;
+    path.moveTo(rect.left(), rect.bottom());
+    path.lineTo(rect.left(), rect.top() + r);
+    path.quadTo(rect.left(), rect.top(), rect.left() + r, rect.top());
+    path.lineTo(rect.right() - r, rect.top());
+    path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + r);
+    path.lineTo(rect.right(), rect.bottom());
+    path.closeSubpath();
+
     painter.setPen(Qt::NoPen);
-
     if (m_active) {
-        const qreal r = 12.0;
-        QPainterPath path;
-        path.moveTo(rect.left(), rect.bottom());
-        path.lineTo(rect.left(), rect.top() + r);
-        path.quadTo(rect.left(), rect.top(), rect.left() + r, rect.top());
-        path.lineTo(rect.right() - r, rect.top());
-        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + r);
-        path.lineTo(rect.right(), rect.bottom());
-        path.closeSubpath();
-
         QLinearGradient gradient(rect.topLeft(), rect.bottomRight());
         gradient.setColorAt(0, activeStart);
         gradient.setColorAt(1, activeEnd);
         painter.setBrush(gradient);
-        painter.drawPath(path);
     } else {
-        const qreal radius = std::min(height() / 2.0, 18.0);
         painter.setBrush(mixed);
-        painter.drawRoundedRect(rect, radius, radius);
     }
+    painter.drawPath(path);
 }
 
 void TabButton::enterEvent(QEvent *event)
