@@ -5,6 +5,7 @@
 
 class BrowserTab;
 class QTabWidget;
+class QWebEnginePage;
 class QWebEngineProfile;
 
 class BrowserWindow final : public QMainWindow {
@@ -20,8 +21,11 @@ private slots:
 
 private:
     void addTabWithUrl(const QUrl &url);
+    void addTabWithPage(QWebEnginePage *page);
     BrowserTab *currentTab() const;
     BrowserTab *tabAt(int index) const;
+    void cycleTabs(int delta);
+    void updateTabChrome(BrowserTab *tab);
     void wireTab(BrowserTab *tab);
 
     QTabWidget *tabs_;

@@ -14,6 +14,8 @@ find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets WebEngineWidgets)
 
 qt_add_executable(morphine
     src/main.cpp
+    src/browserpage.cpp
+    src/browserpage.h
     src/browserwindow.cpp
     src/browserwindow.h
     src/browsertab.cpp

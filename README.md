@@ -10,9 +10,12 @@ Qt WebEngine, а приложение реализует собственную 
 - Chromium-based web view через Qt WebEngine.
 - Домашняя страница `morphine://home`.
 - Адресная строка: URL, домены без `https://`, Google search для текстовых запросов.
-- Вкладки: новая вкладка, закрытие, переключение, drag-reorder.
+- Вкладки: новая вкладка, закрытие, переключение, drag-reorder, favicons.
+- Ссылки с `target=_blank` и запросы нового окна открываются в новой вкладке.
+- Loading state: progress bar, stop/reload button, индикатор загрузки в заголовке вкладки/окна.
 - Кнопки `Back`, `Forward`, `Reload`, `Home`, `Go`.
-- Горячие клавиши: `Ctrl+T`, `Ctrl+W`, `Ctrl+L`, `F5`.
+- Горячие клавиши: `Ctrl+T`, `Ctrl+W`, `Ctrl+L`, `Ctrl+Tab`,
+  `Ctrl+Shift+Tab`, `Alt+Left`, `Alt+Right`, `Alt+Home`, `Ctrl+R`, `F5`.
 - Общий профиль Chromium с persistent cookies, storage и disk cache.
 
 ## Почему такой стек
@@ -128,6 +131,5 @@ cmake --build build
 - find in page;
 - settings page;
 - private windows;
-- favicon cache;
 - simple ad/tracker blocker;
 - session restore.

@@ -1,6 +1,9 @@
 #include "browsertab.h"
 
+#include "browserpage.h"
+
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QKeySequence>
 #include <QLineEdit>
 #include <QProgressBar>
@@ -30,7 +33,7 @@ auto makeToolButton(const QString &text, const QString &toolTip) -> QToolButton 
 }
 } // namespace
 
-BrowserTab::BrowserTab(QWebEngineProfile *profile, QWidget *parent)
+BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget *parent)
     : QWidget(parent),
       webView_(new QWebEngineView(this)),
       addressBar_(new QLineEdit(this)),
@@ -40,10 +43,10 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWidget *parent)
       reloadButton_(makeToolButton("⟳", "Reload")),
       homeButton_(makeToolButton("⌂", "Home")),
       goButton_(new QPushButton("Go", this)),
-      currentTitle_("Morphine")
+      currentTitle_("Morphine"),
+      isLoading_(false)
 {
-    auto *page = new QWebEnginePage(profile, webView_);
-    webView_->setPage(page);
+    installPage(page ? page : new BrowserPage(profile, webView_));
 
     addressBar_->setClearButtonEnabled(true);
     addressBar_->setPlaceholderText("Enter URL or search Google");
@@ -73,7 +76,13 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWidget *parent)
 
     connect(backButton_, &QToolButton::clicked, webView_, &QWebEngineView::back);
     connect(forwardButton_, &QToolButton::clicked, webView_, &QWebEngineView::forward);
-    connect(reloadButton_, &QToolButton::clicked, webView_, &QWebEngineView::reload);
+    connect(reloadButton_, &QToolButton::clicked, this, [this] {
+        if (isLoading_) {
+            webView_->stop();
+        } else {
+            webView_->reload();
+        }
+    });
     connect(homeButton_, &QToolButton::clicked, this, &BrowserTab::loadHome);
     connect(goButton_, &QPushButton::clicked, this, [this] {
         loadInput(addressBar_->text());
@@ -95,9 +104,13 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWidget *parent)
     });
     connect(webView_, &QWebEngineView::loadProgress, this, [this](int progress) {
         progressBar_->setValue(progress);
-        progressBar_->setVisible(progress > 0 && progress < 100);
+        setLoading(progress > 0 && progress < 100, progress);
+    });
+    connect(webView_, &QWebEngineView::loadStarted, this, [this] {
+        setLoading(true, 0);
     });
     connect(webView_, &QWebEngineView::loadFinished, this, [this] {
+        setLoading(false, 100);
         updateActions();
     });
 
@@ -117,9 +130,19 @@ QString BrowserTab::title() const
     return currentTitle_;
 }
 
+QIcon BrowserTab::icon() const
+{
+    return currentIcon_;
+}
+
 QUrl BrowserTab::url() const
 {
     return webView_->url();
+}
+
+bool BrowserTab::isLoading() const
+{
+    return isLoading_;
 }
 
 void BrowserTab::focusAddressBar()
@@ -165,6 +188,23 @@ QUrl BrowserTab::inputToUrl(const QString &input) const
     query.addQueryItem(QStringLiteral("q"), input);
     searchUrl.setQuery(query);
     return searchUrl;
+}
+
+void BrowserTab::installPage(QWebEnginePage *page)
+{
+    page->setParent(webView_);
+    webView_->setPage(page);
+
+    if (auto *browserPage = qobject_cast<BrowserPage *>(page)) {
+        connect(browserPage, &BrowserPage::newWindowPageCreated, this, [this](QWebEnginePage *newPage) {
+            emit newWindowPageRequested(newPage);
+        });
+    }
+
+    connect(page, &QWebEnginePage::iconChanged, this, [this](const QIcon &icon) {
+        currentIcon_ = icon;
+        emit iconChanged(icon);
+    });
 }
 
 QString BrowserTab::homeHtml() const
@@ -280,4 +320,19 @@ void BrowserTab::updateActions()
 {
     backButton_->setEnabled(webView_->history()->canGoBack());
     forwardButton_->setEnabled(webView_->history()->canGoForward());
+    reloadButton_->setText(isLoading_ ? QStringLiteral("×") : QStringLiteral("⟳"));
+    reloadButton_->setToolTip(isLoading_ ? QStringLiteral("Stop") : QStringLiteral("Reload"));
+}
+
+void BrowserTab::setLoading(bool loading, int progress)
+{
+    if (isLoading_ == loading && progressBar_->value() == progress) {
+        return;
+    }
+
+    isLoading_ = loading;
+    progressBar_->setValue(progress);
+    progressBar_->setVisible(loading);
+    updateActions();
+    emit loadingChanged(loading, progress);
 }

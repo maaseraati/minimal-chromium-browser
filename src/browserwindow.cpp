@@ -9,6 +9,7 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QUrl>
+#include <QWebEnginePage>
 #include <QWebEngineProfile>
 #include <QWebEngineView>
 
@@ -50,6 +51,32 @@ BrowserWindow::BrowserWindow(QWidget *parent)
             tab->focusAddressBar();
         }
     });
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Tab), this, [this] {
+        cycleTabs(1);
+    });
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab), this, [this] {
+        cycleTabs(-1);
+    });
+    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Left), this, [this] {
+        if (auto *tab = currentTab()) {
+            tab->view()->back();
+        }
+    });
+    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Right), this, [this] {
+        if (auto *tab = currentTab()) {
+            tab->view()->forward();
+        }
+    });
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_R), this, [this] {
+        if (auto *tab = currentTab()) {
+            tab->view()->reload();
+        }
+    });
+    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Home), this, [this] {
+        if (auto *tab = currentTab()) {
+            tab->loadHome();
+        }
+    });
 
     resize(1280, 820);
     addTab();
@@ -62,7 +89,7 @@ void BrowserWindow::addTab()
 
 void BrowserWindow::addTabWithUrl(const QUrl &url)
 {
-    auto *tab = new BrowserTab(profile_, this);
+    auto *tab = new BrowserTab(profile_, nullptr, this);
     wireTab(tab);
 
     const int index = tabs_->addTab(tab, tab->title());
@@ -73,6 +100,15 @@ void BrowserWindow::addTabWithUrl(const QUrl &url)
     }
 
     tab->focusAddressBar();
+}
+
+void BrowserWindow::addTabWithPage(QWebEnginePage *page)
+{
+    auto *tab = new BrowserTab(profile_, page, this);
+    wireTab(tab);
+
+    const int index = tabs_->addTab(tab, tab->icon(), tab->title());
+    tabs_->setCurrentIndex(index);
 }
 
 void BrowserWindow::closeTab(int index)
@@ -90,8 +126,10 @@ void BrowserWindow::closeTab(int index)
 
 void BrowserWindow::updateWindowTitle()
 {
-    const QString title = currentTab() ? currentTab()->title() : QStringLiteral("Morphine");
-    setWindowTitle(QStringLiteral("%1 — Morphine").arg(title));
+    auto *tab = currentTab();
+    const QString title = tab ? tab->title() : QStringLiteral("Morphine");
+    const QString prefix = tab && tab->isLoading() ? QStringLiteral("Loading ") : QString();
+    setWindowTitle(QStringLiteral("%1%2 — Morphine").arg(prefix, title));
 }
 
 BrowserTab *BrowserWindow::currentTab() const
@@ -104,21 +142,49 @@ BrowserTab *BrowserWindow::tabAt(int index) const
     return qobject_cast<BrowserTab *>(tabs_->widget(index));
 }
 
+void BrowserWindow::cycleTabs(int delta)
+{
+    const int count = tabs_->count();
+    if (count < 2) {
+        return;
+    }
+
+    const int nextIndex = (tabs_->currentIndex() + delta + count) % count;
+    tabs_->setCurrentIndex(nextIndex);
+}
+
+void BrowserWindow::updateTabChrome(BrowserTab *tab)
+{
+    const int index = tabs_->indexOf(tab);
+    if (index < 0) {
+        return;
+    }
+
+    const QString title = tab->title().left(32);
+    tabs_->setTabText(index, tab->isLoading() ? QStringLiteral("◌ %1").arg(title) : title);
+    tabs_->setTabToolTip(index, tab->url().isEmpty() ? tab->title() : tab->url().toString());
+    tabs_->setTabIcon(index, tab->icon());
+    updateWindowTitle();
+}
+
 void BrowserWindow::wireTab(BrowserTab *tab)
 {
     connect(tab, &BrowserTab::titleChanged, this, [this, tab](const QString &title) {
-        const int index = tabs_->indexOf(tab);
-        if (index >= 0) {
-            tabs_->setTabText(index, title.left(32));
-            tabs_->setTabToolTip(index, title);
-        }
-        updateWindowTitle();
+        Q_UNUSED(title);
+        updateTabChrome(tab);
+    });
+    connect(tab, &BrowserTab::iconChanged, this, [this, tab] {
+        updateTabChrome(tab);
+    });
+    connect(tab, &BrowserTab::loadingChanged, this, [this, tab] {
+        updateTabChrome(tab);
     });
     connect(tab, &BrowserTab::urlChanged, this, [this, tab](const QUrl &url) {
-        const int index = tabs_->indexOf(tab);
-        if (index >= 0) {
-            tabs_->setTabToolTip(index, url.toString());
-        }
+        Q_UNUSED(url);
+        updateTabChrome(tab);
+    });
+    connect(tab, &BrowserTab::newWindowPageRequested, this, [this](QWebEnginePage *page) {
+        addTabWithPage(page);
     });
     connect(tab, &BrowserTab::closeRequested, this, [this, tab] {
         closeTab(tabs_->indexOf(tab));
