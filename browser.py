@@ -421,19 +421,15 @@ QWidget#chromeBar {
     background: #FAF6FF;
     border: 0;
 }
-QWidget#navGroup {
-    background: #F3EDF7;
-    border: 0;
-    border-radius: 30px;
-}
 
 QToolButton[chromeNav="true"] {
     background: transparent;
     border: 0;
-    border-radius: 22px;
+    border-radius: 16px;
     padding: 0;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
 }
 QToolButton[chromeNav="true"]:hover { background: rgba(103, 80, 164, 0.10); }
 QToolButton[chromeNav="true"]:pressed { background: rgba(103, 80, 164, 0.20); }
@@ -442,38 +438,39 @@ QToolButton[chromeNav="true"]:disabled { color: #C0BAC9; }
 QFrame#addressPill {
     background: #F3EDF7;
     border: 0;
-    border-radius: 30px;
+    border-radius: 18px;
 }
-QFrame#addressPill:hover { background: #E5DEEC; }
+QFrame#addressPill:hover { background: #ECE6F0; }
 QFrame#addressPill QLineEdit {
     border: 0;
     background: transparent;
     color: #1D1B20;
-    font-size: 20px;
+    font-size: 14px;
     selection-background-color: #EADDFF;
     selection-color: #21005D;
 }
 QFrame#addressPill QToolButton#lockBtn {
     background: transparent;
     border: 0;
-    min-width: 24px;
-    min-height: 24px;
+    min-width: 22px;
+    min-height: 22px;
 }
 QFrame#addressPill QToolButton#starBtn {
     background: transparent;
     border: 0;
-    min-width: 28px;
-    min-height: 28px;
-    border-radius: 14px;
+    min-width: 26px;
+    min-height: 26px;
+    border-radius: 13px;
 }
 QFrame#addressPill QToolButton#starBtn:hover { background: rgba(103, 80, 164, 0.12); }
 
 QToolButton#dotsBtn {
     background: transparent;
     border: 0;
-    border-radius: 22px;
-    min-width: 44px;
-    min-height: 44px;
+    border-radius: 16px;
+    min-width: 32px;
+    min-height: 32px;
+    max-height: 32px;
 }
 QToolButton#dotsBtn:hover { background: rgba(103, 80, 164, 0.10); }
 
@@ -481,13 +478,13 @@ QToolButton#avatar {
     background: #6750A4;
     color: #FFFFFF;
     border: 0;
-    border-radius: 20px;
+    border-radius: 16px;
     font-weight: 700;
-    font-size: 20px;
-    min-width: 40px;
-    min-height: 40px;
-    max-width: 40px;
-    max-height: 40px;
+    font-size: 15px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    max-height: 32px;
 }
 QToolButton#avatar:hover { background: #765FB6; }
 
@@ -497,49 +494,58 @@ QWidget#appShell {
     border-radius: 0;
 }
 QWidget#tabStrip {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FCF8FF, stop:1 #FEFBFF);
+    background: #FAF6FF;
     border: 0;
 }
 QWidget#browserTab {
-    background: #FFFFFF;
+    background: transparent;
     border: 0;
-    border-radius: 8px;
-    color: #1D1B20;
+    border-radius: 14px;
+    color: #49454F;
+}
+QWidget#browserTab:hover {
+    background: rgba(103, 80, 164, 0.06);
 }
 QWidget#browserTab[active="true"] {
-    background: #F5EEFF;
+    background: #ECE3FA;
+    color: #1D1B20;
 }
 QLabel#tabBadge {
-    background: #6750A4;
-    color: #FFFFFF;
-    border-radius: 14px;
-    font-weight: 700;
-    font-size: 16px;
+    background: transparent;
+    color: #49454F;
+    font-weight: 600;
+    font-size: 12px;
 }
 QLabel#tabTitle {
+    color: #49454F;
+    font-size: 13px;
+    font-weight: 500;
+}
+QWidget#browserTab[active="true"] QLabel#tabTitle {
     color: #1D1B20;
-    font-size: 16px;
 }
 QToolButton#tabCloseBtn {
     background: transparent;
     border: 0;
-    border-radius: 13px;
-    min-width: 26px;
-    min-height: 26px;
+    border-radius: 9px;
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 18px;
+    max-height: 18px;
 }
 QToolButton#tabCloseBtn:hover {
-    background: rgba(29, 27, 32, 0.08);
+    background: rgba(29, 27, 32, 0.10);
 }
 QToolButton#newTabBtn {
-    background: #F1EAF8;
+    background: transparent;
     border: 0;
-    border-radius: 7px;
-    min-width: 48px;
-    min-height: 34px;
-    max-width: 48px;
-    max-height: 34px;
+    border-radius: 14px;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
 }
-QToolButton#newTabBtn:hover { background: #EADDFF; }
+QToolButton#newTabBtn:hover { background: rgba(103, 80, 164, 0.10); }
 QStackedWidget#pages {
     background: #FAF6FF;
     border: 0;
@@ -702,8 +708,8 @@ def render_home_html() -> str:
 
 def _make_nav_button(icon_name: str, tooltip: str) -> QToolButton:
     btn = QToolButton()
-    btn.setIcon(svg_icon(icon_name))
-    btn.setIconSize(QSize(22, 22))
+    btn.setIcon(svg_icon(icon_name, color=ON_SURFACE_VARIANT, size=20))
+    btn.setIconSize(QSize(18, 18))
     btn.setToolTip(tooltip)
     btn.setProperty("chromeNav", True)
     btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -796,8 +802,8 @@ class TabStrip(QWidget):
 
 
 class TabButton(QWidget):
-    DEFAULT_WIDTH = 260
-    DEFAULT_HEIGHT = 48
+    DEFAULT_WIDTH = 200
+    DEFAULT_HEIGHT = 32
 
     def __init__(
         self,
@@ -810,6 +816,7 @@ class TabButton(QWidget):
         self.window = window
         self.is_closing = False
         self._has_site_icon = False
+        self._is_active = False
         self.setObjectName("browserTab")
         self.setFixedHeight(self.DEFAULT_HEIGHT)
         self.setMinimumWidth(0)
@@ -818,27 +825,30 @@ class TabButton(QWidget):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 0, 12, 0)
-        layout.setSpacing(12)
+        layout.setContentsMargins(14, 0, 8, 0)
+        layout.setSpacing(8)
 
         self.icon_label = QLabel()
         self.icon_label.setObjectName("tabBadge")
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.icon_label.setFixedSize(28, 28)
+        self.icon_label.setFixedSize(16, 16)
+        self.icon_label.hide()
         layout.addWidget(self.icon_label)
 
         self.title_label = QLabel(title)
         self.title_label.setObjectName("tabTitle")
         self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        layout.addWidget(self.title_label)
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(self.title_label, stretch=1)
 
         self.close_btn = QToolButton()
         self.close_btn.setObjectName("tabCloseBtn")
-        self.close_btn.setIcon(svg_icon("close", color=ON_SURFACE_VARIANT, size=18))
-        self.close_btn.setIconSize(QSize(16, 16))
+        self.close_btn.setIcon(svg_icon("close", color=ON_SURFACE_VARIANT, size=14))
+        self.close_btn.setIconSize(QSize(12, 12))
         self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.close_btn.setAutoRaise(True)
         self.close_btn.clicked.connect(self._on_close_clicked)
+        self.close_btn.hide()
         layout.addWidget(self.close_btn)
         self.set_title(title)
 
@@ -855,43 +865,46 @@ class TabButton(QWidget):
             self.window.select_tab(self.index)
         super().mousePressEvent(event)
 
+    def enterEvent(self, event) -> None:
+        self.close_btn.show()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        if not self._is_active:
+            self.close_btn.hide()
+        super().leaveEvent(event)
+
     def set_active(self, active: bool) -> None:
+        self._is_active = active
         self.setProperty("active", active)
         self.style().unpolish(self)
         self.style().polish(self)
+        if active:
+            self.close_btn.show()
+        elif not self.underMouse():
+            self.close_btn.hide()
 
     def set_title(self, title: str) -> None:
         self.title_label.setText(title)
-        if title.lower() == "history":
-            self.icon_label.setText("")
-            self.icon_label.setStyleSheet("background: transparent;")
-            self.icon_label.setPixmap(svg_icon("history").pixmap(28, 28))
-        elif self._has_site_icon:
-            # Real favicon already set via set_icon(); leave it alone.
-            return
-        else:
-            self.icon_label.setPixmap(QPixmap())
-            self.icon_label.setStyleSheet("")
-            self.icon_label.setText("m")
+        if title.lower() == "history" and not self._has_site_icon:
+            self.icon_label.setPixmap(svg_icon("history", color=ON_SURFACE_VARIANT, size=16).pixmap(16, 16))
+            self.icon_label.show()
 
     def set_icon(self, icon: QIcon) -> None:
         if icon is None or icon.isNull():
             self._has_site_icon = False
             self.icon_label.setPixmap(QPixmap())
-            self.icon_label.setStyleSheet("")
-            self.icon_label.setText("m")
+            self.icon_label.hide()
             return
-        pix = icon.pixmap(20, 20)
+        pix = icon.pixmap(16, 16)
         if pix.isNull():
             self._has_site_icon = False
             self.icon_label.setPixmap(QPixmap())
-            self.icon_label.setStyleSheet("")
-            self.icon_label.setText("m")
+            self.icon_label.hide()
             return
         self._has_site_icon = True
-        self.icon_label.setText("")
-        self.icon_label.setStyleSheet("background: transparent;")
         self.icon_label.setPixmap(pix)
+        self.icon_label.show()
 
 
 @dataclass
@@ -1068,15 +1081,15 @@ class BrowserWindow(QMainWindow):
         self.reload_btn = _make_nav_button("refresh", "Reload")
         self.reload_btn.clicked.connect(lambda: self.active_web_view().reload())
 
-        self.home_btn = _make_nav_button("home", "Home")
-        self.home_btn.clicked.connect(lambda: self.load_home())
+        self.history_btn = _make_nav_button("history", "History")
+        self.history_btn.clicked.connect(self.show_history)
 
         address_pill = self._build_address_pill()
 
         self.dots_btn = QToolButton()
         self.dots_btn.setObjectName("dotsBtn")
-        self.dots_btn.setIcon(svg_icon("more_vert"))
-        self.dots_btn.setIconSize(QSize(22, 22))
+        self.dots_btn.setIcon(svg_icon("more_vert", size=20))
+        self.dots_btn.setIconSize(QSize(18, 18))
         self.dots_btn.setToolTip("Menu")
         self.dots_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.dots_btn.setAutoRaise(True)
@@ -1091,43 +1104,36 @@ class BrowserWindow(QMainWindow):
 
         bar = QWidget()
         bar.setObjectName("chromeBar")
-        bar.setFixedHeight(92)
+        bar.setFixedHeight(48)
         bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(14, 14, 22, 22)
-        layout.setSpacing(20)
+        layout.setContentsMargins(12, 6, 12, 8)
+        layout.setSpacing(4)
 
-        nav_group = QWidget()
-        nav_group.setObjectName("navGroup")
-        nav_group.setFixedHeight(60)
-        nav_layout = QHBoxLayout(nav_group)
-        nav_layout.setContentsMargins(14, 0, 14, 0)
-        nav_layout.setSpacing(10)
-        nav_layout.addWidget(self.back_btn)
-        nav_layout.addWidget(self.forward_btn)
-        nav_layout.addWidget(self.reload_btn)
-        nav_layout.addWidget(self.home_btn)
-        layout.addWidget(nav_group)
-        layout.addWidget(address_pill)
-        layout.addStretch()
+        layout.addWidget(self.back_btn)
+        layout.addWidget(self.forward_btn)
+        layout.addWidget(self.reload_btn)
+        layout.addWidget(self.history_btn)
+        layout.addSpacing(8)
+        layout.addWidget(address_pill, stretch=1)
+        layout.addSpacing(8)
         layout.addWidget(self.dots_btn)
-        self.dots_btn.clicked.connect(self.show_history)
-        layout.addSpacing(18)
+        layout.addSpacing(6)
         layout.addWidget(self.avatar_btn)
         self.chrome_bar = bar
 
     def _build_address_pill(self) -> QFrame:
         pill = QFrame()
         pill.setObjectName("addressPill")
-        pill.setFixedHeight(60)
-        pill.setMinimumWidth(680)
-        pill.setMaximumWidth(680)
+        pill.setFixedHeight(34)
+        pill.setMinimumWidth(360)
+        pill.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        self._lock_icon_outline = svg_icon("lock", color=ON_SURFACE_VARIANT, size=18)
+        self._lock_icon_outline = svg_icon("lock", color=ON_SURFACE_VARIANT, size=16)
         lock_btn = QToolButton()
         lock_btn.setObjectName("lockBtn")
         lock_btn.setIcon(self._lock_icon_outline)
-        lock_btn.setIconSize(QSize(16, 16))
+        lock_btn.setIconSize(QSize(14, 14))
         lock_btn.setToolTip("Connection is private")
         lock_btn.setAutoRaise(True)
         lock_btn.setEnabled(False)
@@ -1139,12 +1145,12 @@ class BrowserWindow(QMainWindow):
         self.address_bar.setPlaceholderText("Search the web or type a URL")
         self.address_bar.returnPressed.connect(self.open_address)
 
-        self._star_outline = svg_icon("star_outline")
-        self._star_filled = svg_icon("star_filled")
+        self._star_outline = svg_icon("star_outline", size=20)
+        self._star_filled = svg_icon("star_filled", size=20)
         self.star_btn = QToolButton()
         self.star_btn.setObjectName("starBtn")
         self.star_btn.setIcon(self._star_outline)
-        self.star_btn.setIconSize(QSize(20, 20))
+        self.star_btn.setIconSize(QSize(16, 16))
         self.star_btn.setToolTip("Bookmark this page")
         self.star_btn.setCheckable(True)
         self.star_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1152,7 +1158,7 @@ class BrowserWindow(QMainWindow):
         self.star_btn.toggled.connect(self._on_star_toggled)
 
         layout = QHBoxLayout(pill)
-        layout.setContentsMargins(14, 0, 8, 0)
+        layout.setContentsMargins(12, 0, 6, 0)
         layout.setSpacing(8)
         layout.addWidget(lock_btn)
         layout.addWidget(self.address_bar, stretch=1)
@@ -1176,21 +1182,21 @@ class BrowserWindow(QMainWindow):
         layout.setSpacing(0)
         tab_strip = TabStrip(self)
         tab_strip.setObjectName("tabStrip")
-        tab_strip.setFixedHeight(68)
+        tab_strip.setFixedHeight(44)
         tab_layout = QHBoxLayout(tab_strip)
-        tab_layout.setContentsMargins(14, 14, 24, 0)
-        tab_layout.setSpacing(12)
+        tab_layout.setContentsMargins(10, 8, 12, 4)
+        tab_layout.setSpacing(4)
 
         self.tab_buttons_container = QWidget()
         self.tab_buttons_layout = QHBoxLayout(self.tab_buttons_container)
         self.tab_buttons_layout.setContentsMargins(0, 0, 0, 0)
-        self.tab_buttons_layout.setSpacing(12)
+        self.tab_buttons_layout.setSpacing(2)
         tab_layout.addWidget(self.tab_buttons_container)
 
         self.new_tab_btn = QToolButton()
         self.new_tab_btn.setObjectName("newTabBtn")
-        self.new_tab_btn.setIcon(svg_icon("add"))
-        self.new_tab_btn.setIconSize(QSize(20, 20))
+        self.new_tab_btn.setIcon(svg_icon("add", color=ON_SURFACE_VARIANT, size=18))
+        self.new_tab_btn.setIconSize(QSize(16, 16))
         self.new_tab_btn.setToolTip("New tab")
         self.new_tab_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.new_tab_btn.setAutoRaise(True)
@@ -1202,7 +1208,7 @@ class BrowserWindow(QMainWindow):
         window_controls.setObjectName("windowControls")
         window_layout = QHBoxLayout(window_controls)
         window_layout.setContentsMargins(0, 0, 0, 0)
-        window_layout.setSpacing(18)
+        window_layout.setSpacing(10)
         for text, slot in (
             ("–", self.minimize_with_animation),
             ("▢", self.toggle_window_maximized),
@@ -1257,6 +1263,7 @@ class BrowserWindow(QMainWindow):
 
     def _animate_tab_open(self, tab_button: TabButton) -> None:
         target_width = tab_button.maximumWidth() or TabButton.DEFAULT_WIDTH
+        tab_button.setMinimumWidth(0)
         tab_button.setMaximumWidth(0)
 
         opacity = QGraphicsOpacityEffect(tab_button)
@@ -1264,13 +1271,16 @@ class BrowserWindow(QMainWindow):
         tab_button.setGraphicsEffect(opacity)
 
         grow = QPropertyAnimation(tab_button, b"maximumWidth", self)
-        grow.setDuration(260)
+        grow.setDuration(320)
         grow.setStartValue(0)
         grow.setEndValue(target_width)
-        grow.setEasingCurve(QEasingCurve.Type.OutCubic)
+        # OutBack adds a tiny overshoot at the end — feels lively, not bouncy.
+        curve = QEasingCurve(QEasingCurve.Type.OutBack)
+        curve.setOvershoot(1.2)
+        grow.setEasingCurve(curve)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(220)
+        fade.setDuration(240)
         fade.setStartValue(0.0)
         fade.setEndValue(1.0)
         fade.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -1317,10 +1327,10 @@ class BrowserWindow(QMainWindow):
         tab_button.setMaximumWidth(start_width)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(220)
+        fade.setDuration(180)
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
-        fade.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        fade.setEasingCurve(QEasingCurve.Type.InCubic)
 
         shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
         shrink.setDuration(260)
