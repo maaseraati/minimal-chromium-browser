@@ -13,7 +13,12 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets WebEngineWidgets Svg)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets WebEngineWidgets Svg)
 
 add_executable(minimal-browser
+    src/assets.cpp
+    src/browser_tab.cpp
+    src/browser_window.cpp
     src/main.cpp
+    src/tab_button.cpp
+    src/tab_strip.cpp
 )
 
 target_link_libraries(minimal-browser
