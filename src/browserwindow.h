@@ -1,0 +1,60 @@
+#pragma once
+
+#include <QMainWindow>
+#include <QSettings>
+#include <QUrl>
+
+class BrowserTab;
+class QLineEdit;
+class QListWidget;
+class QListWidgetItem;
+class QTabWidget;
+class QWebEnginePage;
+class QWebEngineProfile;
+
+class BrowserWindow final : public QMainWindow {
+    Q_OBJECT
+
+public:
+    explicit BrowserWindow(QWidget *parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
+private slots:
+    void addTab();
+    void addBookmark();
+    void closeTab(int index);
+    void hideFindBar();
+    void openSelectedListItem(QListWidgetItem *item);
+    void showFindBar();
+    void updateWindowTitle();
+
+private:
+    void addHistoryEntry(const QString &title, const QUrl &url);
+    void addTabWithUrl(const QUrl &url);
+    void addTabWithPage(QWebEnginePage *page);
+    BrowserTab *currentTab() const;
+    BrowserTab *tabAt(int index) const;
+    void cycleTabs(int delta);
+    void loadBookmarks();
+    void loadHistory();
+    void restoreSession();
+    void saveBookmarks();
+    void saveSession();
+    void setupDownloads();
+    void setupFindBar();
+    void setupSidePanel();
+    void showSidePanel(int pageIndex);
+    void updateTabChrome(BrowserTab *tab);
+    void wireTab(BrowserTab *tab);
+
+    QTabWidget *tabs_;
+    QWebEngineProfile *profile_;
+    QSettings settings_;
+    QListWidget *bookmarksList_;
+    QListWidget *historyList_;
+    QTabWidget *sidePanel_;
+    QWidget *findBar_;
+    QLineEdit *findInput_;
+};
