@@ -88,6 +88,16 @@ QString iconSvg(const QString &name, const QString &color)
                    R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>)SVG")
             .arg(color);
     }
+    if (name == "search") {
+        return QString::fromUtf8(
+                   R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M9.5 3a6.5 6.5 0 0 1 5.18 10.43l.27.27h.8l5 5-1.5 1.5-5-5v-.8l-.27-.27A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>)SVG")
+            .arg(color);
+    }
+    if (name == "github") {
+        return QString::fromUtf8(
+                   R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.18-3.37-1.18-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.82.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.1.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.5 9.5 0 0 1 12 6.98c.85 0 1.7.11 2.5.33 1.9-1.29 2.74-1.02 2.74-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.69-4.57 4.94.36.31.68.92.68 1.86V21c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>)SVG")
+            .arg(color);
+    }
     if (name == "close") {
         return QString::fromUtf8(
                    R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.41-6.3-6.29-6.3 6.29-1.41-1.41L9.17 12 2.88 5.71 4.29 4.3l6.3 6.29 6.29-6.29z"/></svg>)SVG")
@@ -135,43 +145,180 @@ QString homeHtml()
   <title>morphine</title>
   <style>
     * { box-sizing: border-box; }
+    :root {
+      --accent: #2f7eea;
+      --accent-soft: #d8e9ff;
+      --accent-mid: #7fb3ff;
+      --text: #1e3558;
+      --muted: #7186a3;
+    }
     body {
       margin: 0;
       min-height: 100vh;
+      overflow: hidden;
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 12vh 24px 24px;
+      padding: 10vh 24px 24px;
       font-family: Inter, Roboto, "Segoe UI", sans-serif;
-      color: #1e3558;
+      color: var(--text);
       background:
-        radial-gradient(1200px 620px at 20% -12%, rgba(92, 157, 247, .18), transparent 60%),
-        radial-gradient(900px 460px at 90% 115%, rgba(47, 126, 234, .12), transparent 62%),
-        #f7fbff;
+        radial-gradient(900px 360px at 50% 13%, rgba(47, 126, 234, .13), transparent 68%),
+        linear-gradient(174deg, rgba(255,255,255,.98) 0%, rgba(248,251,255,.98) 48%, rgba(217,235,255,.72) 49%, rgba(237,247,255,.96) 100%);
     }
-    main { width: min(680px, 100%); display: flex; flex-direction: column; align-items: center; gap: 28px; }
-    h1 { margin: 0; font-size: clamp(74px, 11vw, 116px); letter-spacing: -.06em; line-height: 1; color: #7aaef6; }
-    form { width: 100%; display: flex; gap: 10px; align-items: center; padding: 5px 5px 5px 18px; border-radius: 999px; background: #ffffff; box-shadow: 0 12px 34px rgba(60, 118, 210, .12), inset 0 0 0 1px rgba(150, 188, 244, .22); }
-    input { flex: 1; min-width: 0; height: 48px; border: 0; outline: none; background: transparent; color: #1e3558; font: inherit; font-size: 16px; }
-    input::placeholder { color: #7b91af; }
-    button { height: 42px; padding: 0 20px; border: 0; border-radius: 999px; background: #2f7eea; color: white; font: inherit; font-weight: 700; cursor: pointer; }
-    .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-    .chip { height: 36px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; background: rgba(255,255,255,.76); color: #476285; text-decoration: none; box-shadow: inset 0 0 0 1px rgba(150,188,244,.24); }
-    .chip:hover { background: #fff; color: #1e3558; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: auto -8vw -20vh -8vw;
+      height: 56vh;
+      background: linear-gradient(136deg, rgba(47, 126, 234, .08), rgba(47, 126, 234, .22));
+      clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%);
+      pointer-events: none;
+    }
+    main {
+      position: relative;
+      width: min(720px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      z-index: 1;
+    }
+    h1 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: clamp(70px, 10vw, 104px);
+      letter-spacing: -.055em;
+      line-height: 1;
+      font-weight: 850;
+      color: var(--accent-mid);
+      text-shadow: 0 10px 24px rgba(47, 126, 234, .18);
+    }
+    .brand-mark {
+      width: .9em;
+      height: .64em;
+      display: inline-block;
+      border-radius: .18em;
+      background:
+        radial-gradient(circle at 28% 62%, rgba(32, 96, 198, .48) 0 18%, transparent 19%),
+        linear-gradient(135deg, rgba(127,179,255,.88), rgba(47,126,234,.64));
+      box-shadow: 0 14px 28px rgba(47, 126, 234, .22);
+      clip-path: polygon(0 8%, 16% 0, 42% 32%, 58% 32%, 84% 0, 100% 8%, 100% 92%, 84% 100%, 58% 68%, 42% 68%, 16% 100%, 0 92%);
+    }
+    form {
+      width: min(670px, 100%);
+      height: 74px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 8px 8px 8px 28px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 18px 42px rgba(70, 113, 185, .14), inset 0 0 0 1px rgba(143, 178, 232, .28);
+      backdrop-filter: blur(16px);
+    }
+    .search-icon {
+      width: 24px;
+      height: 24px;
+      color: #7c8ba2;
+      flex-shrink: 0;
+    }
+    input {
+      flex: 1;
+      min-width: 0;
+      height: 56px;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 520;
+    }
+    input::placeholder { color: #7f8ea5; }
+    button {
+      width: 52px;
+      height: 52px;
+      border: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #73abff, var(--accent));
+      color: white;
+      font: inherit;
+      font-size: 0;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(47, 126, 234, .32);
+    }
+    button::before {
+      content: "➜";
+      font-size: 28px;
+      line-height: 1;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 26px;
+      background: rgba(255,255,255,.58);
+      box-shadow: inset 0 0 0 1px rgba(143,178,232,.18);
+      backdrop-filter: blur(14px);
+    }
+    .chip {
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.66);
+      color: #5c6d86;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 650;
+      box-shadow: inset 0 0 0 1px rgba(143,178,232,.20), 0 8px 18px rgba(70,113,185,.08);
+    }
+    .chip:hover { background: #fff; color: var(--text); }
+    .chip-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(47,126,234,.12);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .chip.add {
+      width: 48px;
+      padding: 0;
+      justify-content: center;
+      font-size: 25px;
+      color: var(--accent);
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>morphine</h1>
+    <h1><span class="brand-mark"></span><span>orphine</span></h1>
     <form action="https://www.google.com/search" method="get" role="search">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 3a6.5 6.5 0 0 1 5.18 10.43l.27.27h.8l5 5-1.5 1.5-5-5v-.8l-.27-.27A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
       <input name="q" type="search" placeholder="Search the web or type a URL" autofocus autocomplete="off">
       <button type="submit">Search</button>
     </form>
     <nav class="chips" aria-label="Quick links">
-      <a class="chip" href="https://www.google.com">Google</a>
-      <a class="chip" href="https://github.com">GitHub</a>
-      <a class="chip" href="https://news.ycombinator.com">Hacker News</a>
-      <a class="chip" href="https://wikipedia.org">Wikipedia</a>
+      <a class="chip" href="https://www.google.com"><span class="chip-icon">G</span>Google</a>
+      <a class="chip" href="https://github.com"><span class="chip-icon">⌘</span>GitHub</a>
+      <a class="chip" href="https://news.ycombinator.com"><span class="chip-icon">Y</span>Hacker News</a>
+      <a class="chip" href="https://wikipedia.org"><span class="chip-icon">W</span>Wikipedia</a>
+      <a class="chip add" href="morphine://home" aria-label="Add shortcut">+</a>
     </nav>
   </main>
 </body>
@@ -316,20 +463,20 @@ TabButton::TabButton(int index, const QString &title, BrowserWindow *window)
     : m_index(index), m_window(window)
 {
     setObjectName("browserTab");
-    setFixedHeight(34);
+    setFixedHeight(54);
     setMinimumWidth(0);
-    setMaximumWidth(230);
+    setMaximumWidth(265);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     setCursor(Qt::PointingHandCursor);
 
     auto *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(18, 0, 10, 0);
-    layout->setSpacing(8);
+    layout->setContentsMargins(22, 0, 16, 0);
+    layout->setSpacing(10);
 
     m_iconLabel = new QLabel(this);
     m_iconLabel->setObjectName("tabBadge");
     m_iconLabel->setAlignment(Qt::AlignCenter);
-    m_iconLabel->setFixedSize(18, 18);
+    m_iconLabel->setFixedSize(24, 24);
     m_iconLabel->hide();
     layout->addWidget(m_iconLabel);
 
@@ -341,8 +488,8 @@ TabButton::TabButton(int index, const QString &title, BrowserWindow *window)
 
     m_closeButton = new QToolButton(this);
     m_closeButton->setObjectName("tabCloseBtn");
-    m_closeButton->setIcon(svgIcon("close", OnSurfaceVariant, 14));
-    m_closeButton->setIconSize(QSize(12, 12));
+    m_closeButton->setIcon(svgIcon("close", "#ffffff", 15));
+    m_closeButton->setIconSize(QSize(13, 13));
     m_closeButton->setCursor(Qt::PointingHandCursor);
     m_closeButton->setAutoRaise(true);
     m_closeButton->hide();
@@ -367,7 +514,7 @@ void TabButton::setTitleText(const QString &title)
 {
     m_titleLabel->setText(title);
     if (title.compare("History", Qt::CaseInsensitive) == 0 && !m_hasSiteIcon) {
-        m_iconLabel->setPixmap(svgIcon("history", OnSurfaceVariant, 16).pixmap(16, 16));
+        m_iconLabel->setPixmap(svgIcon("history", "#ffffff", 22).pixmap(22, 22));
         m_iconLabel->show();
     }
 }
@@ -491,22 +638,23 @@ BrowserWindow::BrowserWindow()
     setMouseTracking(true);
     setStyleSheet(QStringLiteral(R"(
 QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #f7fbff; }
-QWidget#tabStrip { background: #f7fbff; border-top: 1px solid #dbe8fb; }
-QWidget#chromeBar { background: #edf6ff; border-top: 1px solid rgba(152,185,236,.26); border-bottom: 1px solid rgba(152,185,236,.34); }
-QWidget#browserTab { background: transparent; border: 0; border-radius: 16px; color: #476285; }
-QWidget#browserTab:hover { background: rgba(47,126,234,.08); }
-QWidget#browserTab[active="true"] { background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #73abff, stop:1 #4e8ff0); color: #fff; }
-QLabel#tabTitle { color: #243d60; font-size: 14px; font-weight: 600; }
+QWidget#tabStrip { background: #f9fcff; border-top: 1px solid #d9e8fb; border-left: 1px solid #d9e8fb; border-right: 1px solid #d9e8fb; border-top-left-radius: 18px; border-top-right-radius: 18px; }
+QWidget#chromeBar { background: #edf6ff; border: 1px solid rgba(150,184,236,.36); border-top: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+QWidget#browserTab { background: transparent; border: 0; border-radius: 0; color: #476285; }
+QWidget#browserTab:hover { background: rgba(47,126,234,.06); border-top-left-radius: 15px; border-top-right-radius: 15px; }
+QWidget#browserTab[active="true"] { background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #73abff, stop:1 #4e8ff0); border-top-left-radius: 15px; border-top-right-radius: 15px; color: #fff; }
+QLabel#tabBadge { color: #ffffff; font-size: 14px; font-weight: 700; }
+QLabel#tabTitle { color: #243d60; font-size: 15px; font-weight: 600; }
 QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; }
-QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 9px; min-width: 18px; min-height: 18px; max-width: 18px; max-height: 18px; }
-QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.24); }
-QToolButton#newTabBtn { background: rgba(255,255,255,.66); border: 0; border-radius: 18px; min-width: 36px; min-height: 36px; max-width: 36px; max-height: 36px; }
-QToolButton#newTabBtn:hover { background: #fff; }
-QToolButton[chromeNav="true"], QToolButton#dotsBtn { background: transparent; border: 0; border-radius: 18px; min-width: 36px; min-height: 36px; max-height: 36px; }
+QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 10px; min-width: 20px; min-height: 20px; max-width: 20px; max-height: 20px; }
+QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
+QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 22px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; }
+QToolButton#newTabBtn:hover { background: rgba(47,126,234,.14); }
+QToolButton[chromeNav="true"], QToolButton#dotsBtn { background: transparent; border: 0; border-radius: 20px; min-width: 40px; min-height: 40px; max-height: 40px; }
 QToolButton[chromeNav="true"]:hover, QToolButton#dotsBtn:hover { background: rgba(47,126,234,.10); }
-QFrame#addressPill { background: #fff; border: 1px solid rgba(151,185,238,.30); border-radius: 24px; }
+QFrame#addressPill { background: #fff; border: 1px solid rgba(151,185,238,.24); border-radius: 25px; }
 QFrame#addressPill:hover { border-color: rgba(47,126,234,.35); }
-QFrame#addressPill QLineEdit { border: 0; background: transparent; color: #1e3558; font-size: 16px; selection-background-color: #cfe3ff; selection-color: #12315b; }
+QFrame#addressPill QLineEdit { border: 0; background: transparent; color: #1e3558; font-size: 20px; selection-background-color: #cfe3ff; selection-color: #12315b; }
 QFrame#addressPill QToolButton { background: transparent; border: 0; border-radius: 14px; min-width: 28px; min-height: 28px; }
 QFrame#addressPill QToolButton:hover { background: rgba(47,126,234,.10); }
 QToolButton#avatar { background: #3b82ee; color: #fff; border: 0; border-radius: 22px; font-weight: 800; font-size: 18px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; }
@@ -528,8 +676,8 @@ void BrowserWindow::buildChrome()
 {
     auto makeNavButton = [](const QString &icon, const QString &tooltip) {
         auto *button = new QToolButton;
-        button->setIcon(svgIcon(icon, OnSurfaceVariant, 22));
-        button->setIconSize(QSize(22, 22));
+        button->setIcon(svgIcon(icon, OnSurface, 25));
+        button->setIconSize(QSize(25, 25));
         button->setToolTip(tooltip);
         button->setProperty("chromeNav", true);
         button->setCursor(Qt::PointingHandCursor);
@@ -549,8 +697,8 @@ void BrowserWindow::buildChrome()
     auto *addressPill = buildAddressPill();
     auto *dotsButton = new QToolButton;
     dotsButton->setObjectName("dotsBtn");
-    dotsButton->setIcon(svgIcon("more_vert", OnSurfaceVariant, 22));
-    dotsButton->setIconSize(QSize(22, 22));
+    dotsButton->setIcon(svgIcon("more_vert", OnSurface, 25));
+    dotsButton->setIconSize(QSize(25, 25));
     dotsButton->setCursor(Qt::PointingHandCursor);
     dotsButton->setAutoRaise(true);
 
@@ -564,15 +712,15 @@ void BrowserWindow::buildChrome()
     m_chromeBar->setObjectName("chromeBar");
     m_chromeBar->setFixedHeight(72);
     auto *layout = new QHBoxLayout(m_chromeBar);
-    layout->setContentsMargins(16, 10, 18, 12);
-    layout->setSpacing(10);
+    layout->setContentsMargins(28, 11, 22, 11);
+    layout->setSpacing(18);
     layout->addWidget(m_backButton);
     layout->addWidget(m_forwardButton);
     layout->addWidget(m_reloadButton);
     layout->addWidget(m_historyButton);
-    layout->addSpacing(18);
+    layout->addSpacing(26);
     layout->addWidget(addressPill, 1);
-    layout->addSpacing(18);
+    layout->addSpacing(28);
     layout->addWidget(dotsButton);
     layout->addWidget(avatarButton);
 }
@@ -581,14 +729,14 @@ QFrame *BrowserWindow::buildAddressPill()
 {
     auto *pill = new QFrame;
     pill->setObjectName("addressPill");
-    pill->setFixedHeight(50);
+    pill->setFixedHeight(52);
     pill->setMinimumWidth(420);
     pill->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     auto *lockButton = new QToolButton;
     lockButton->setObjectName("lockBtn");
     lockButton->setIcon(svgIcon("lock", "#8a98aa", 17));
-    lockButton->setIconSize(QSize(17, 17));
+    lockButton->setIconSize(QSize(19, 19));
     lockButton->setEnabled(false);
     lockButton->setAutoRaise(true);
 
@@ -600,17 +748,17 @@ QFrame *BrowserWindow::buildAddressPill()
 
     m_starButton = new QToolButton;
     m_starButton->setObjectName("starBtn");
-    m_starButton->setIcon(svgIcon("star_outline", PrimaryColor, 22));
-    m_starButton->setIconSize(QSize(20, 20));
+    m_starButton->setIcon(svgIcon("star_outline", PrimaryColor, 25));
+    m_starButton->setIconSize(QSize(24, 24));
     m_starButton->setCheckable(true);
     m_starButton->setCursor(Qt::PointingHandCursor);
     connect(m_starButton, &QToolButton::toggled, this, [this](bool checked) {
-        m_starButton->setIcon(svgIcon(checked ? "star_filled" : "star_outline", PrimaryColor, 22));
+        m_starButton->setIcon(svgIcon(checked ? "star_filled" : "star_outline", PrimaryColor, 25));
     });
 
     auto *layout = new QHBoxLayout(pill);
-    layout->setContentsMargins(18, 0, 10, 0);
-    layout->setSpacing(12);
+    layout->setContentsMargins(22, 0, 14, 0);
+    layout->setSpacing(16);
     layout->addWidget(lockButton);
     layout->addWidget(m_addressBar, 1);
     layout->addWidget(m_starButton);
@@ -635,19 +783,19 @@ void BrowserWindow::buildCentral()
     tabStrip->setObjectName("tabStrip");
     tabStrip->setFixedHeight(66);
     auto *tabLayout = new QHBoxLayout(tabStrip);
-    tabLayout->setContentsMargins(18, 12, 14, 8);
-    tabLayout->setSpacing(10);
+    tabLayout->setContentsMargins(0, 10, 24, 0);
+    tabLayout->setSpacing(16);
 
     m_tabButtonsContainer = new QWidget;
     m_tabButtonsLayout = new QHBoxLayout(m_tabButtonsContainer);
     m_tabButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    m_tabButtonsLayout->setSpacing(8);
+    m_tabButtonsLayout->setSpacing(0);
     tabLayout->addWidget(m_tabButtonsContainer);
 
     auto *newTabButton = new QToolButton;
     newTabButton->setObjectName("newTabBtn");
     newTabButton->setIcon(svgIcon("add", PrimaryColor, 20));
-    newTabButton->setIconSize(QSize(20, 20));
+    newTabButton->setIconSize(QSize(22, 22));
     newTabButton->setCursor(Qt::PointingHandCursor);
     newTabButton->setAutoRaise(true);
     connect(newTabButton, &QToolButton::clicked, this, [this]() { addTab(true); });
@@ -658,7 +806,7 @@ void BrowserWindow::buildCentral()
     windowControls->setObjectName("windowControls");
     auto *controlsLayout = new QHBoxLayout(windowControls);
     controlsLayout->setContentsMargins(0, 0, 0, 0);
-    controlsLayout->setSpacing(12);
+    controlsLayout->setSpacing(18);
     const QList<QPair<QString, std::function<void()>>> controls = {
         {"–", [this]() { minimizeWindow(); }},
         {"▢", [this]() { toggleWindowMaximized(); }},
