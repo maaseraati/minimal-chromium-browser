@@ -1,8 +1,10 @@
 #include <QApplication>
 #include <QByteArray>
 #include <QCloseEvent>
+#include <QCoreApplication>
 #include <QCursor>
 #include <QEvent>
+#include <QFile>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -36,6 +38,7 @@ constexpr auto AppTitle = "morphine";
 constexpr auto HomeUrl = "morphine://home";
 constexpr auto HistoryUrl = "morphine://history";
 constexpr auto GoogleSearchUrl = "https://www.google.com/search?q=";
+constexpr auto LogoFileName = "morphine_logo.png";
 
 constexpr auto PrimaryColor = "#2f7eea";
 constexpr auto OnSurface = "#1e3558";
@@ -126,6 +129,21 @@ QString htmlEscaped(const QString &value)
     return result;
 }
 
+QString logoDataUri()
+{
+    QFile file(QCoreApplication::applicationDirPath() + "/" + LogoFileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        file.setFileName(QCoreApplication::applicationDirPath() + "/../" + LogoFileName);
+    }
+    if (!file.isOpen()) {
+        file.setFileName(QCoreApplication::applicationDirPath() + "/../../" + LogoFileName);
+    }
+    if (!file.isOpen() && !file.open(QIODevice::ReadOnly)) {
+        return QString();
+    }
+    return "data:image/png;base64," + QString::fromLatin1(file.readAll().toBase64());
+}
+
 bool isSearchQuery(const QString &text)
 {
     const QString trimmed = text.trimmed();
@@ -137,6 +155,10 @@ bool isSearchQuery(const QString &text)
 
 QString homeHtml()
 {
+    const QString logo = logoDataUri();
+    const QString logoMarkup = logo.isEmpty()
+        ? QStringLiteral(R"(<h1 class="brand fallback"><span>Morphine</span></h1>)")
+        : QStringLiteral(R"(<img class="brand" src="%1" alt="Morphine" draggable="false">)").arg(logo);
     return QStringLiteral(R"(<!doctype html>
 <html lang="en">
 <head>
@@ -159,20 +181,22 @@ QString homeHtml()
       display: flex;
       align-items: flex-start;
       justify-content: center;
-      padding: 10vh 24px 24px;
+      padding: 8.5vh 24px 24px;
       font-family: Inter, Roboto, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(900px 360px at 50% 13%, rgba(47, 126, 234, .13), transparent 68%),
-        linear-gradient(174deg, rgba(255,255,255,.98) 0%, rgba(248,251,255,.98) 48%, rgba(217,235,255,.72) 49%, rgba(237,247,255,.96) 100%);
+        radial-gradient(900px 360px at 50% 13%, rgba(47, 126, 234, .10), transparent 68%),
+        #f9fcff;
     }
     body::before {
       content: "";
       position: fixed;
-      inset: auto -8vw -20vh -8vw;
-      height: 56vh;
-      background: linear-gradient(136deg, rgba(47, 126, 234, .08), rgba(47, 126, 234, .22));
-      clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%);
+      left: -8vw;
+      right: -8vw;
+      bottom: -18vh;
+      height: 52vh;
+      background: linear-gradient(136deg, rgba(47, 126, 234, .08), rgba(47, 126, 234, .25));
+      clip-path: polygon(0 34%, 100% 2%, 100% 100%, 0 100%);
       pointer-events: none;
     }
     main {
@@ -184,28 +208,17 @@ QString homeHtml()
       gap: 30px;
       z-index: 1;
     }
-    h1 {
+    .brand {
       margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: clamp(70px, 10vw, 104px);
-      letter-spacing: -.055em;
-      line-height: 1;
-      font-weight: 850;
-      color: var(--accent-mid);
-      text-shadow: 0 10px 24px rgba(47, 126, 234, .18);
+      width: min(630px, 86vw);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 14px 28px rgba(47, 126, 234, .13));
     }
-    .brand-mark {
-      width: .9em;
-      height: .64em;
-      display: inline-block;
-      border-radius: .18em;
-      background:
-        radial-gradient(circle at 28% 62%, rgba(32, 96, 198, .48) 0 18%, transparent 19%),
-        linear-gradient(135deg, rgba(127,179,255,.88), rgba(47,126,234,.64));
-      box-shadow: 0 14px 28px rgba(47, 126, 234, .22);
-      clip-path: polygon(0 8%, 16% 0, 42% 32%, 58% 32%, 84% 0, 100% 8%, 100% 92%, 84% 100%, 58% 68%, 42% 68%, 16% 100%, 0 92%);
+    h1.brand {
+      width: auto;
+      font-size: clamp(70px, 10vw, 104px);
+      color: var(--accent-mid);
     }
     form {
       width: min(670px, 100%);
@@ -307,7 +320,7 @@ QString homeHtml()
 </head>
 <body>
   <main>
-    <h1><span class="brand-mark"></span><span>orphine</span></h1>
+    %1
     <form action="https://www.google.com/search" method="get" role="search">
       <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 3a6.5 6.5 0 0 1 5.18 10.43l.27.27h.8l5 5-1.5 1.5-5-5v-.8l-.27-.27A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
       <input name="q" type="search" placeholder="Search the web or type a URL" autofocus autocomplete="off">
@@ -322,7 +335,7 @@ QString homeHtml()
     </nav>
   </main>
 </body>
-</html>)");
+</html>)").arg(logoMarkup);
 }
 
 }  // namespace
@@ -463,20 +476,20 @@ TabButton::TabButton(int index, const QString &title, BrowserWindow *window)
     : m_index(index), m_window(window)
 {
     setObjectName("browserTab");
-    setFixedHeight(54);
+    setFixedHeight(48);
     setMinimumWidth(0);
-    setMaximumWidth(265);
+    setMaximumWidth(175);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     setCursor(Qt::PointingHandCursor);
 
     auto *layout = new QHBoxLayout(this);
-    layout->setContentsMargins(22, 0, 16, 0);
-    layout->setSpacing(10);
+    layout->setContentsMargins(16, 0, 10, 0);
+    layout->setSpacing(8);
 
     m_iconLabel = new QLabel(this);
     m_iconLabel->setObjectName("tabBadge");
     m_iconLabel->setAlignment(Qt::AlignCenter);
-    m_iconLabel->setFixedSize(24, 24);
+    m_iconLabel->setFixedSize(20, 20);
     m_iconLabel->hide();
     layout->addWidget(m_iconLabel);
 
@@ -503,10 +516,16 @@ void TabButton::setActive(bool active)
     setProperty("active", active);
     style()->unpolish(this);
     style()->polish(this);
+    if (!m_hasSiteIcon && m_titleLabel->text().compare("History", Qt::CaseInsensitive) == 0) {
+        const QString color = active ? QString("#ffffff") : QString(OnSurfaceVariant);
+        m_iconLabel->setPixmap(svgIcon("history", color, 20).pixmap(20, 20));
+    }
     if (active) {
         m_closeButton->show();
+        m_closeButton->setIcon(svgIcon("close", "#ffffff", 15));
     } else if (!underMouse()) {
         m_closeButton->hide();
+        m_closeButton->setIcon(svgIcon("close", OnSurfaceVariant, 15));
     }
 }
 
@@ -514,7 +533,8 @@ void TabButton::setTitleText(const QString &title)
 {
     m_titleLabel->setText(title);
     if (title.compare("History", Qt::CaseInsensitive) == 0 && !m_hasSiteIcon) {
-        m_iconLabel->setPixmap(svgIcon("history", "#ffffff", 22).pixmap(22, 22));
+        const QString color = m_active ? QString("#ffffff") : QString(OnSurfaceVariant);
+        m_iconLabel->setPixmap(svgIcon("history", color, 20).pixmap(20, 20));
         m_iconLabel->show();
     }
 }
@@ -638,17 +658,19 @@ BrowserWindow::BrowserWindow()
     setMouseTracking(true);
     setStyleSheet(QStringLiteral(R"(
 QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #f7fbff; }
-QWidget#tabStrip { background: #f9fcff; border-top: 1px solid #d9e8fb; border-left: 1px solid #d9e8fb; border-right: 1px solid #d9e8fb; border-top-left-radius: 18px; border-top-right-radius: 18px; }
+QWidget#tabStrip { background: #f7fbff; border-top: 1px solid #d9e8fb; border-left: 1px solid #d9e8fb; border-right: 1px solid #d9e8fb; border-top-left-radius: 18px; border-top-right-radius: 18px; }
+QWidget#tabButtonsContainer { max-width: 540px; }
 QWidget#chromeBar { background: #edf6ff; border: 1px solid rgba(150,184,236,.36); border-top: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
-QWidget#browserTab { background: transparent; border: 0; border-radius: 0; color: #476285; }
-QWidget#browserTab:hover { background: rgba(47,126,234,.06); border-top-left-radius: 15px; border-top-right-radius: 15px; }
+QWidget#browserTab { background: #e8f2ff; border: 1px solid rgba(127,169,232,.32); border-bottom: 0; border-top-left-radius: 15px; border-top-right-radius: 15px; color: #476285; }
+QWidget#browserTab:hover { background: #f1f7ff; border-color: rgba(47,126,234,.28); }
 QWidget#browserTab[active="true"] { background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #73abff, stop:1 #4e8ff0); border-top-left-radius: 15px; border-top-right-radius: 15px; color: #fff; }
-QLabel#tabBadge { color: #ffffff; font-size: 14px; font-weight: 700; }
+QLabel#tabBadge { color: #476285; font-size: 14px; font-weight: 700; }
 QLabel#tabTitle { color: #243d60; font-size: 15px; font-weight: 600; }
 QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; }
+QWidget#browserTab[active="true"] QLabel#tabBadge { color: #fff; }
 QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 10px; min-width: 20px; min-height: 20px; max-width: 20px; max-height: 20px; }
 QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
-QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 22px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; }
+QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 19px; min-width: 38px; min-height: 38px; max-width: 38px; max-height: 38px; }
 QToolButton#newTabBtn:hover { background: rgba(47,126,234,.14); }
 QToolButton[chromeNav="true"], QToolButton#dotsBtn { background: transparent; border: 0; border-radius: 20px; min-width: 40px; min-height: 40px; max-height: 40px; }
 QToolButton[chromeNav="true"]:hover, QToolButton#dotsBtn:hover { background: rgba(47,126,234,.10); }
@@ -781,21 +803,23 @@ void BrowserWindow::buildCentral()
 
     auto *tabStrip = new TabStrip(this);
     tabStrip->setObjectName("tabStrip");
-    tabStrip->setFixedHeight(66);
+    tabStrip->setFixedHeight(58);
     auto *tabLayout = new QHBoxLayout(tabStrip);
-    tabLayout->setContentsMargins(0, 10, 24, 0);
-    tabLayout->setSpacing(16);
+    tabLayout->setContentsMargins(16, 9, 18, 0);
+    tabLayout->setSpacing(10);
 
     m_tabButtonsContainer = new QWidget;
+    m_tabButtonsContainer->setObjectName("tabButtonsContainer");
+    m_tabButtonsContainer->setMaximumWidth(540);
     m_tabButtonsLayout = new QHBoxLayout(m_tabButtonsContainer);
     m_tabButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    m_tabButtonsLayout->setSpacing(0);
+    m_tabButtonsLayout->setSpacing(8);
     tabLayout->addWidget(m_tabButtonsContainer);
 
     auto *newTabButton = new QToolButton;
     newTabButton->setObjectName("newTabBtn");
     newTabButton->setIcon(svgIcon("add", PrimaryColor, 20));
-    newTabButton->setIconSize(QSize(22, 22));
+    newTabButton->setIconSize(QSize(20, 20));
     newTabButton->setCursor(Qt::PointingHandCursor);
     newTabButton->setAutoRaise(true);
     connect(newTabButton, &QToolButton::clicked, this, [this]() { addTab(true); });

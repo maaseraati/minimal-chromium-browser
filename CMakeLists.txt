@@ -23,4 +23,11 @@ target_link_libraries(minimal-browser
         Qt${QT_VERSION_MAJOR}::Svg
 )
 
+add_custom_command(TARGET minimal-browser POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/morphine_logo.png
+        $<TARGET_FILE_DIR:minimal-browser>/morphine_logo.png
+)
+
 install(TARGETS minimal-browser RUNTIME DESTINATION bin)
+install(FILES morphine_logo.png DESTINATION bin)
