@@ -17,6 +17,9 @@ class BrowserWindow final : public QMainWindow {
 
 public:
     explicit BrowserWindow(QWidget *parent = nullptr);
+    explicit BrowserWindow(bool isPrivate, QWidget *parent = nullptr);
+
+    bool isPrivate() const { return isPrivate_; }
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -26,6 +29,7 @@ private slots:
     void addBookmark();
     void closeTab(int index);
     void hideFindBar();
+    void openPrivateWindow();
     void openSelectedListItem(QListWidgetItem *item);
     void showFindBar();
     void showSettings();
@@ -62,4 +66,5 @@ private:
     QTabWidget *sidePanel_;
     QWidget *findBar_;
     QLineEdit *findInput_;
+    bool isPrivate_;
 };

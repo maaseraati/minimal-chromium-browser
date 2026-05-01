@@ -30,21 +30,30 @@
 #include <QWebEngineView>
 
 BrowserWindow::BrowserWindow(QWidget *parent)
+    : BrowserWindow(false, parent)
+{
+}
+
+BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     : QMainWindow(parent),
       tabs_(new QTabWidget(this)),
-      profile_(new QWebEngineProfile(QStringLiteral("morphine"), this)),
+      profile_(isPrivate ? new QWebEngineProfile(this)
+                         : new QWebEngineProfile(QStringLiteral("morphine"), this)),
       settings_(QStringLiteral("Morphine"), QStringLiteral("Morphine")),
       bookmarksList_(new QListWidget(this)),
       historyList_(new QListWidget(this)),
       sidePanel_(new QTabWidget(this)),
       findBar_(new QWidget(this)),
-      findInput_(new QLineEdit(this))
+      findInput_(new QLineEdit(this)),
+      isPrivate_(isPrivate)
 {
-    profile_->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
-    profile_->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
-    profile_->setCachePath(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
-    profile_->setPersistentStoragePath(
-        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    if (!isPrivate_) {
+        profile_->setHttpCacheType(QWebEngineProfile::DiskHttpCache);
+        profile_->setPersistentCookiesPolicy(QWebEngineProfile::AllowPersistentCookies);
+        profile_->setCachePath(QStandardPaths::writableLocation(QStandardPaths::CacheLocation));
+        profile_->setPersistentStoragePath(
+            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    }
 
     tabs_->setDocumentMode(true);
     tabs_->setMovable(true);
@@ -85,6 +94,10 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     menuButton->setCursor(Qt::PointingHandCursor);
     menuButton->setPopupMode(QToolButton::InstantPopup);
     auto *menu = new QMenu(menuButton);
+    auto *newPrivateAction = menu->addAction(QStringLiteral("New private window"));
+    newPrivateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N));
+    connect(newPrivateAction, &QAction::triggered, this, &BrowserWindow::openPrivateWindow);
+    menu->addSeparator();
     auto *settingsAction = menu->addAction(QStringLiteral("Settings\u2026"));
     settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
     connect(settingsAction, &QAction::triggered, this, &BrowserWindow::showSettings);
@@ -95,6 +108,10 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     auto *historyAction = menu->addAction(QStringLiteral("History"));
     historyAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_H));
     connect(historyAction, &QAction::triggered, this, [this] { showSidePanel(1); });
+    if (isPrivate_) {
+        bookmarksAction->setVisible(false);
+        historyAction->setVisible(false);
+    }
     menuButton->setMenu(menu);
     tabs_->setCornerWidget(menuButton, Qt::TopLeftCorner);
 
@@ -147,21 +164,44 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     new QShortcut(QKeySequence::Find, this, SLOT(showFindBar()));
     new QShortcut(QKeySequence(Qt::Key_Escape), this, SLOT(hideFindBar()));
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this, SLOT(showSettings()));
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), this, SLOT(openPrivateWindow()));
 
     resize(1280, 820);
-    loadBookmarks();
-    loadHistory();
+    if (isPrivate_) {
+        setStyleSheet(QStringLiteral(
+            "QMainWindow { background: #1a1230; } "
+            "QStatusBar { background: #2a1a4a; color: #d8c8ff; }"));
+        statusBar()->showMessage(QStringLiteral(
+            "Private mode \u2014 history, cookies and downloads are not saved."));
+    } else {
+        loadBookmarks();
+        loadHistory();
+    }
     restoreSession();
 }
 
 void BrowserWindow::closeEvent(QCloseEvent *event)
 {
-    saveSession();
+    if (!isPrivate_) {
+        saveSession();
+    }
     QMainWindow::closeEvent(event);
+}
+
+void BrowserWindow::openPrivateWindow()
+{
+    auto *window = new BrowserWindow(true);
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    window->show();
 }
 
 void BrowserWindow::addBookmark()
 {
+    if (isPrivate_) {
+        statusBar()->showMessage(QStringLiteral("Bookmarks are disabled in private mode"), 3000);
+        return;
+    }
+
     auto *tab = currentTab();
     if (!tab || !tab->isRestorableUrl()) {
         return;
@@ -200,7 +240,9 @@ void BrowserWindow::addTabWithUrl(const QUrl &url)
     }
 
     tab->focusAddressBar();
-    saveSession();
+    if (!isPrivate_) {
+        saveSession();
+    }
 }
 
 void BrowserWindow::addTabWithPage(QWebEnginePage *page)
@@ -210,7 +252,9 @@ void BrowserWindow::addTabWithPage(QWebEnginePage *page)
 
     const int index = tabs_->addTab(tab, tab->icon(), tab->title());
     tabs_->setCurrentIndex(index);
-    saveSession();
+    if (!isPrivate_) {
+        saveSession();
+    }
 }
 
 void BrowserWindow::closeTab(int index)
@@ -224,7 +268,9 @@ void BrowserWindow::closeTab(int index)
     tabs_->removeTab(index);
     widget->deleteLater();
     updateWindowTitle();
-    saveSession();
+    if (!isPrivate_) {
+        saveSession();
+    }
 }
 
 void BrowserWindow::hideFindBar()
@@ -265,7 +311,7 @@ void BrowserWindow::updateWindowTitle()
 
 void BrowserWindow::addHistoryEntry(const QString &title, const QUrl &url)
 {
-    if (!url.isValid() || url.scheme() == QStringLiteral("morphine") || title.isEmpty()) {
+    if (isPrivate_ || !url.isValid() || url.scheme() == QStringLiteral("morphine") || title.isEmpty()) {
         return;
     }
 
@@ -349,7 +395,7 @@ void BrowserWindow::loadHistory()
 
 void BrowserWindow::restoreSession()
 {
-    if (SettingsDialog::restoreSessionEnabled()) {
+    if (!isPrivate_ && SettingsDialog::restoreSessionEnabled()) {
         const QStringList urls = settings_.value(QStringLiteral("session/urls")).toStringList();
         for (const QString &url : urls) {
             const QUrl parsedUrl(url);
@@ -363,9 +409,11 @@ void BrowserWindow::restoreSession()
         addTab();
     }
 
-    const int index = settings_.value(QStringLiteral("session/currentIndex"), 0).toInt();
-    if (index >= 0 && index < tabs_->count()) {
-        tabs_->setCurrentIndex(index);
+    if (!isPrivate_) {
+        const int index = settings_.value(QStringLiteral("session/currentIndex"), 0).toInt();
+        if (index >= 0 && index < tabs_->count()) {
+            tabs_->setCurrentIndex(index);
+        }
     }
 }
 
@@ -528,7 +576,9 @@ void BrowserWindow::updateTabChrome(BrowserTab *tab)
     tabs_->setTabToolTip(index, tab->url().isEmpty() ? tab->title() : tab->url().toString());
     tabs_->setTabIcon(index, tab->icon());
     updateWindowTitle();
-    saveSession();
+    if (!isPrivate_) {
+        saveSession();
+    }
 }
 
 void BrowserWindow::wireTab(BrowserTab *tab)
