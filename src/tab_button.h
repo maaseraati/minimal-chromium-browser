@@ -48,7 +48,7 @@ private:
     QVariantAnimation *m_activeAnimation = nullptr;
     qreal m_hoverProgress = 0;
     qreal m_activeProgress = 0;
-    int m_baseWidth = 116;
+    int m_baseWidth = 138;
     bool m_active = false;
     bool m_hasSiteIcon = false;
 };

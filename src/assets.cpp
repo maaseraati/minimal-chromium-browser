@@ -30,6 +30,11 @@ QString iconSvg(const QString &name, const QString &color)
                    R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M13 3a9 9 0 1 1-8.95 8H2l3.1-3.1L8.2 11H6.07A7 7 0 1 0 13 5a6.96 6.96 0 0 0-4.95 2.05L6.64 5.64A8.96 8.96 0 0 1 13 3zm-1 4h1.5v5l4 2.4-.75 1.23L12 12.8z"/></svg>)SVG")
             .arg(color);
     }
+    if (name == "shield") {
+        return QString::fromUtf8(
+                   R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M12 2 4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 2.18 6 2.25v4.66c0 4.05-2.7 7.91-6 8.86-3.3-.95-6-4.81-6-8.86V6.43l6-2.25z"/></svg>)SVG")
+            .arg(color);
+    }
     if (name == "lock") {
         return QString::fromUtf8(
                    R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%1"><path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-7-2a2 2 0 1 1 4 0v2h-4zm7 12H7v-8h10z"/></svg>)SVG")

@@ -10,6 +10,7 @@
 #include <QMouseEvent>
 #include <QFontMetrics>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QStyle>
@@ -167,32 +168,39 @@ void TabButton::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    const QRectF rect = QRectF(0.5, 0.5, width() - 1.0, height() - 0.5);
-    const qreal radius = 12.0;
+    const QRectF rect = QRectF(0, 0, width(), height());
 
-    QColor base(176, 209, 248);
-    QColor hover(155, 192, 240);
-    QColor activeStart(115, 171, 255);
-    QColor activeEnd(78, 143, 240);
-    QColor border(116, 160, 225, 95);
+    const QColor base(221, 233, 251);
+    const QColor hover(202, 219, 244);
+    const QColor activeStart(101, 165, 255);
+    const QColor activeEnd(63, 134, 240);
 
     QColor mixed = base;
     mixed.setRedF(base.redF() + (hover.redF() - base.redF()) * m_hoverProgress);
     mixed.setGreenF(base.greenF() + (hover.greenF() - base.greenF()) * m_hoverProgress);
     mixed.setBlueF(base.blueF() + (hover.blueF() - base.blueF()) * m_hoverProgress);
 
-    painter.setPen(QPen(border, 1));
-    painter.setBrush(mixed);
-    painter.drawRoundedRect(rect, radius, radius);
+    painter.setPen(Qt::NoPen);
 
-    if (m_activeProgress > 0.01) {
+    if (m_active) {
+        const qreal r = 14.0;
+        QPainterPath path;
+        path.moveTo(rect.left(), rect.bottom());
+        path.lineTo(rect.left(), rect.top() + r);
+        path.quadTo(rect.left(), rect.top(), rect.left() + r, rect.top());
+        path.lineTo(rect.right() - r, rect.top());
+        path.quadTo(rect.right(), rect.top(), rect.right(), rect.top() + r);
+        path.lineTo(rect.right(), rect.bottom());
+        path.closeSubpath();
+
         QLinearGradient gradient(rect.topLeft(), rect.bottomRight());
-        activeStart.setAlphaF(m_activeProgress);
-        activeEnd.setAlphaF(m_activeProgress);
         gradient.setColorAt(0, activeStart);
         gradient.setColorAt(1, activeEnd);
-        painter.setPen(Qt::NoPen);
         painter.setBrush(gradient);
+        painter.drawPath(path);
+    } else {
+        const qreal radius = std::min(height() / 2.0, 22.0);
+        painter.setBrush(mixed);
         painter.drawRoundedRect(rect, radius, radius);
     }
 }

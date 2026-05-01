@@ -40,33 +40,34 @@ BrowserWindow::BrowserWindow()
     resize(1200, 800);
     setMouseTracking(true);
     setStyleSheet(QStringLiteral(R"(
-QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #f7fbff; }
-QWidget#tabStrip { background: #f7fbff; border-top: 1px solid #d9e8fb; border-left: 1px solid #d9e8fb; border-right: 1px solid #d9e8fb; border-top-left-radius: 18px; border-top-right-radius: 18px; }
-QWidget#chromeBar { background: #edf6ff; border: 1px solid rgba(150,184,236,.36); border-top: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #ffffff; }
+QWidget#tabStrip { background: transparent; border: 0; }
+QWidget#chromeBar { background: #dde9fb; border: 0; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; }
 QWidget#browserTab { background: transparent; border: 0; color: #28415f; }
 QLabel#tabBadge { color: #476285; font-size: 14px; font-weight: 700; }
-QLabel#tabTitle { color: #102b4d; font-size: 13px; font-weight: 700; }
-QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; }
+QLabel#tabTitle { color: #25406a; font-size: 13px; font-weight: 600; }
+QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; font-weight: 700; }
 QWidget#browserTab[active="true"] QLabel#tabBadge { color: #fff; }
 QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 8px; min-width: 16px; min-height: 16px; max-width: 16px; max-height: 16px; }
-QToolButton#tabCloseBtn:hover { background: rgba(47,126,234,.14); }
+QToolButton#tabCloseBtn:hover { background: rgba(47,126,234,.16); }
 QWidget#browserTab[active="true"] QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
 QWidget#tabSpacer { min-width: 4px; }
-QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 17px; min-width: 34px; min-height: 34px; max-width: 34px; max-height: 34px; }
-QToolButton#newTabBtn:hover { background: rgba(47,126,234,.14); }
+QToolButton#newTabBtn { background: rgba(120,165,235,.16); border: 0; border-radius: 17px; min-width: 34px; min-height: 34px; max-width: 34px; max-height: 34px; }
+QToolButton#newTabBtn:hover { background: rgba(120,165,235,.28); }
 QToolButton[chromeNav="true"], QToolButton#dotsBtn { background: transparent; border: 0; border-radius: 20px; min-width: 40px; min-height: 40px; max-height: 40px; }
 QToolButton[chromeNav="true"]:hover, QToolButton#dotsBtn:hover { background: rgba(47,126,234,.10); }
-QFrame#addressPill { background: #fff; border: 1px solid rgba(151,185,238,.24); border-radius: 25px; }
-QFrame#addressPill:hover { border-color: rgba(47,126,234,.35); }
+QFrame#addressPill { background: #ffffff; border: 1px solid rgba(151,185,238,.32); border-radius: 25px; }
+QFrame#addressPill:hover { border-color: rgba(47,126,234,.45); }
 QFrame#addressPill QLineEdit { border: 0; background: transparent; color: #1e3558; font-size: 20px; selection-background-color: #cfe3ff; selection-color: #12315b; }
 QFrame#addressPill QToolButton { background: transparent; border: 0; border-radius: 14px; min-width: 28px; min-height: 28px; }
 QFrame#addressPill QToolButton:hover { background: rgba(47,126,234,.10); }
 QToolButton#avatar { background: #3b82ee; color: #fff; border: 0; border-radius: 22px; font-weight: 800; font-size: 18px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; }
 QToolButton#avatar:hover { background: #2f73dc; }
 QWidget#windowControls { background: transparent; }
-QToolButton[windowControl="true"] { background: transparent; border: 0; border-radius: 15px; min-width: 50px; min-height: 34px; font-size: 25px; color: #243d60; }
+QToolButton[windowControl="true"] { background: transparent; border: 0; border-radius: 15px; min-width: 50px; min-height: 34px; font-size: 25px; color: #5e7392; }
 QToolButton[windowControl="true"]:hover { background: rgba(47,126,234,.10); }
-QToolButton#windowClose:hover { background: #f06a4d; color: white; }
+QToolButton#windowClose { color: #e84a4a; font-weight: 700; }
+QToolButton#windowClose:hover { background: rgba(232,74,74,.14); color: #e84a4a; }
 )"));
 
     buildChrome();
@@ -95,7 +96,7 @@ void BrowserWindow::buildChrome()
     connect(m_forwardButton, &QToolButton::clicked, this, [this]() { activeWebView()->forward(); });
     m_reloadButton = makeNavButton("refresh", "Reload");
     connect(m_reloadButton, &QToolButton::clicked, this, [this]() { activeWebView()->reload(); });
-    m_historyButton = makeNavButton("history", "History");
+    m_historyButton = makeNavButton("shield", "History");
     connect(m_historyButton, &QToolButton::clicked, this, [this]() { showHistory(); });
 
     auto *addressPill = buildAddressPill();
@@ -303,7 +304,7 @@ void BrowserWindow::selectTab(int index)
     m_pages->setCurrentIndex(index);
     BrowserTab *view = activeWebView();
     const QString url = view->url().toString();
-    m_addressBar->setText(url == HomeUrl ? QString() : url);
+    m_addressBar->setText(url);
     m_starButton->setChecked(false);
     setWindowTitle(view->title().isEmpty() ? AppTitle : view->title());
     syncTabButtons();
@@ -408,7 +409,7 @@ void BrowserWindow::updateAddressBar(BrowserTab *view, const QUrl &url)
     if (view != activeWebView()) {
         return;
     }
-    m_addressBar->setText(url.toString() == HomeUrl ? QString() : url.toString());
+    m_addressBar->setText(url.toString());
     m_starButton->setChecked(false);
 }
 
