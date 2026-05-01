@@ -17,6 +17,7 @@
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QMouseEvent>
+#include <QPointer>
 #include <QShortcut>
 #include <QSizePolicy>
 #include <QStackedWidget>
@@ -43,11 +44,11 @@ BrowserWindow::BrowserWindow()
 QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #ffffff; }
 QWidget#tabStrip { background: transparent; border: 0; }
 QWidget#chromeBar { background: #dde9fb; border: 0; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; }
-QWidget#browserTab { background: transparent; border: 0; color: #28415f; }
-QLabel#tabBadge { color: #476285; font-size: 14px; font-weight: 700; }
-QLabel#tabTitle { color: #25406a; font-size: 13px; font-weight: 600; }
-QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; font-weight: 700; }
-QWidget#browserTab[active="true"] QLabel#tabBadge { color: #fff; }
+QWidget#browserTab { background: transparent; border: 0; color: #1a3056; }
+QLabel#tabBadge { color: #1a3056; font-size: 13px; font-weight: 700; }
+QLabel#tabTitle { color: #1a3056; font-size: 12px; font-weight: 600; }
+QWidget#browserTab[active="true"] QLabel#tabTitle { color: #ffffff; font-weight: 700; }
+QWidget#browserTab[active="true"] QLabel#tabBadge { color: #ffffff; }
 QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 8px; min-width: 16px; min-height: 16px; max-width: 16px; max-height: 16px; }
 QToolButton#tabCloseBtn:hover { background: rgba(47,126,234,.16); }
 QWidget#browserTab[active="true"] QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
@@ -186,9 +187,9 @@ void BrowserWindow::buildCentral()
 
     auto *tabStrip = new TabStrip(this);
     tabStrip->setObjectName("tabStrip");
-    tabStrip->setFixedHeight(48);
+    tabStrip->setFixedHeight(40);
     auto *tabLayout = new QHBoxLayout(tabStrip);
-    tabLayout->setContentsMargins(14, 4, 18, 0);
+    tabLayout->setContentsMargins(14, 6, 18, 0);
     tabLayout->setSpacing(4);
 
     m_tabButtonsContainer = new QWidget;
@@ -271,7 +272,7 @@ void BrowserWindow::closeTab(int index)
     }
 
     QWidget *view = m_pages->widget(index);
-    QWidget *button = m_tabButtonsLayout->itemAt(index)->widget();
+    auto *button = dynamic_cast<TabButton *>(m_tabButtonsLayout->itemAt(index)->widget());
     rememberClosedTab(view);
     if (index == m_currentTabIndex && m_pages->count() > 1) {
         const int nextIndex = index == m_pages->count() - 1 ? index - 1 : index + 1;
@@ -279,20 +280,30 @@ void BrowserWindow::closeTab(int index)
     }
     m_pages->removeWidget(view);
     view->deleteLater();
-    QLayoutItem *item = m_tabButtonsLayout->takeAt(index);
-    if (item != nullptr) {
-        if (button != nullptr) {
-            button->deleteLater();
-        }
-        delete item;
-    }
     if (m_currentTabIndex >= m_pages->count()) {
         m_currentTabIndex = m_pages->count() - 1;
     }
     if (m_pages->count() > 0) {
         selectTab(std::max(0, m_currentTabIndex));
     }
-    syncTabButtons();
+    if (button != nullptr) {
+        QPointer<QHBoxLayout> layout = m_tabButtonsLayout;
+        QPointer<TabButton> guard = button;
+        button->animateClose([this, layout, guard]() {
+            if (!layout || !guard) {
+                return;
+            }
+            const int idx = layout->indexOf(guard);
+            if (idx >= 0) {
+                QLayoutItem *item = layout->takeAt(idx);
+                delete item;
+            }
+            guard->deleteLater();
+            syncTabButtons();
+        });
+    } else {
+        syncTabButtons();
+    }
 }
 
 void BrowserWindow::selectTab(int index)

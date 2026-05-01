@@ -8,23 +8,25 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QAbstractAnimation>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QStyle>
+#include <QTimer>
 #include <QToolButton>
 #include <QVariantAnimation>
 
 namespace morphine {
 
-TabButton::TabButton(int index, const QString &title, BrowserWindow *window)
+TabButton::TabButton(int index, const QString &title, BrowserWindow *window, bool animateIn)
     : m_index(index), m_window(window)
 {
     setObjectName("browserTab");
-    setFixedHeight(44);
-    setFixedWidth(m_baseWidth);
+    setFixedHeight(34);
+    setFixedWidth(animateIn ? 0 : m_baseWidth);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     setCursor(Qt::PointingHandCursor);
 
@@ -68,11 +70,50 @@ TabButton::TabButton(int index, const QString &title, BrowserWindow *window)
 
     m_activeAnimation = new QVariantAnimation(this);
     m_activeAnimation->setEasingCurve(QEasingCurve::OutCubic);
-    m_activeAnimation->setDuration(150);
+    m_activeAnimation->setDuration(180);
     connect(m_activeAnimation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
         m_activeProgress = value.toReal();
         update();
     });
+
+    if (animateIn) {
+        auto *openAnim = new QVariantAnimation(this);
+        openAnim->setStartValue(0);
+        openAnim->setEndValue(m_baseWidth);
+        openAnim->setDuration(220);
+        openAnim->setEasingCurve(QEasingCurve::OutCubic);
+        connect(openAnim, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+            if (!m_closing) {
+                setFixedWidth(value.toInt());
+            }
+        });
+        QTimer::singleShot(0, openAnim, [openAnim]() { openAnim->start(QAbstractAnimation::DeleteWhenStopped); });
+    }
+}
+
+void TabButton::animateClose(std::function<void()> done)
+{
+    if (m_closing) {
+        return;
+    }
+    m_closing = true;
+    setEnabled(false);
+    m_titleLabel->hide();
+    m_iconLabel->hide();
+    m_closeButton->hide();
+
+    auto *anim = new QVariantAnimation(this);
+    anim->setStartValue(width());
+    anim->setEndValue(0);
+    anim->setDuration(160);
+    anim->setEasingCurve(QEasingCurve::InCubic);
+    connect(anim, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+        setFixedWidth(value.toInt());
+    });
+    connect(anim, &QVariantAnimation::finished, this, [done]() {
+        if (done) done();
+    });
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void TabButton::setActive(bool active)
@@ -166,12 +207,15 @@ void TabButton::resizeEvent(QResizeEvent *event)
 
 void TabButton::paintEvent(QPaintEvent *)
 {
+    if (width() <= 1) {
+        return;
+    }
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     const QRectF rect = QRectF(0, 0, width(), height());
 
-    const QColor base(221, 233, 251);
-    const QColor hover(202, 219, 244);
+    const QColor base(196, 218, 246);
+    const QColor hover(178, 205, 240);
     const QColor activeStart(101, 165, 255);
     const QColor activeEnd(63, 134, 240);
 
@@ -183,7 +227,7 @@ void TabButton::paintEvent(QPaintEvent *)
     painter.setPen(Qt::NoPen);
 
     if (m_active) {
-        const qreal r = 14.0;
+        const qreal r = 12.0;
         QPainterPath path;
         path.moveTo(rect.left(), rect.bottom());
         path.lineTo(rect.left(), rect.top() + r);
@@ -199,7 +243,7 @@ void TabButton::paintEvent(QPaintEvent *)
         painter.setBrush(gradient);
         painter.drawPath(path);
     } else {
-        const qreal radius = std::min(height() / 2.0, 22.0);
+        const qreal radius = std::min(height() / 2.0, 18.0);
         painter.setBrush(mixed);
         painter.drawRoundedRect(rect, radius, radius);
     }

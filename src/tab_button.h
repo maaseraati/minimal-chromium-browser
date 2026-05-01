@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include <functional>
+
 class QEvent;
 class QIcon;
 class QLabel;
@@ -17,13 +19,14 @@ class BrowserWindow;
 
 class TabButton : public QWidget {
 public:
-    explicit TabButton(int index, const QString &title, BrowserWindow *window);
+    explicit TabButton(int index, const QString &title, BrowserWindow *window, bool animateIn = true);
 
     void setActive(bool active);
     void setTitleText(const QString &title);
     void setIconPixmap(const QIcon &icon);
     int index() const { return m_index; }
     void setIndex(int index) { m_index = index; }
+    void animateClose(std::function<void()> done);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -48,9 +51,10 @@ private:
     QVariantAnimation *m_activeAnimation = nullptr;
     qreal m_hoverProgress = 0;
     qreal m_activeProgress = 0;
-    int m_baseWidth = 138;
+    int m_baseWidth = 132;
     bool m_active = false;
     bool m_hasSiteIcon = false;
+    bool m_closing = false;
 };
 
 }  // namespace morphine
