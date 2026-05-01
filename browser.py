@@ -33,7 +33,10 @@ HOME_URL = "morphine://home"
 HISTORY_URL = "morphine://history"
 GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
 
-ASSETS_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    ASSETS_DIR = Path(sys._MEIPASS)
+else:
+    ASSETS_DIR = Path(__file__).resolve().parent
 LOGO_PATH = ASSETS_DIR / "morphine_logo.png"
 
 HOME_HTML_TEMPLATE = """
@@ -190,6 +193,18 @@ HOME_HTML_TEMPLATE = """
       background: var(--md-sys-color-primary-pressed);
     }
 
+    button.search-btn:disabled {
+      background: #D6D0DD;
+      color: var(--md-sys-color-outline);
+      box-shadow: none;
+      cursor: default;
+    }
+
+    button.search-btn:disabled:hover {
+      background: #D6D0DD;
+      box-shadow: none;
+    }
+
     .chips {
       display: flex;
       flex-wrap: wrap;
@@ -242,23 +257,7 @@ HOME_HTML_TEMPLATE = """
       height: 18px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-sys-color-primary: #D0BCFF;
-        --md-sys-color-on-primary: #381E72;
-        --md-sys-color-primary-hover: #C0ADEC;
-        --md-sys-color-primary-pressed: #B49BE0;
-        --md-sys-color-primary-container: #4F378B;
-        --md-sys-color-on-primary-container: #EADDFF;
-        --md-sys-color-surface: #141218;
-        --md-sys-color-on-surface: #E6E0E9;
-        --md-sys-color-on-surface-variant: #CAC4D0;
-        --md-sys-color-surface-container: #211F26;
-        --md-sys-color-surface-container-high: #2B2930;
-        --md-sys-color-outline: #938F99;
-        --md-sys-color-outline-variant: #49454F;
-      }
-    }
+
   </style>
 </head>
 <body>
@@ -295,6 +294,25 @@ HOME_HTML_TEMPLATE = """
       </a>
     </nav>
   </main>
+  <script>
+    const searchForm = document.querySelector("form.search");
+    const searchInput = searchForm.querySelector('input[name="q"]');
+    const searchButton = searchForm.querySelector("button.search-btn");
+
+    function syncSearchButton() {
+      searchButton.disabled = searchInput.value.trim().length === 0;
+    }
+
+    searchForm.addEventListener("submit", (event) => {
+      if (searchInput.value.trim().length === 0) {
+        event.preventDefault();
+        syncSearchButton();
+        searchInput.focus();
+      }
+    });
+    searchInput.addEventListener("input", syncSearchButton);
+    syncSearchButton();
+  </script>
 </body>
 </html>
 """
@@ -477,17 +495,26 @@ QWidget#appShell {
     border-radius: 0;
 }
 QWidget#tabStrip {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #FCF8FF, stop:1 #FEFBFF);
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #F8F2FC, stop:1 #FEFBFF);
     border: 0;
 }
 QWidget#browserTab {
-    background: #FFFFFF;
-    border: 0;
-    border-radius: 8px;
+    background: #F3EDF7;
+    border: 1px solid transparent;
+    border-radius: 24px;
     color: #1D1B20;
 }
+QWidget#browserTab:hover {
+    background: #ECE6F0;
+}
 QWidget#browserTab[active="true"] {
-    background: #F5EEFF;
+    background: #FAF6FF;
+    border: 1px solid #EADDFF;
+    border-bottom: 0;
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 QLabel#tabBadge {
     background: #6750A4;
@@ -496,9 +523,24 @@ QLabel#tabBadge {
     font-weight: 700;
     font-size: 16px;
 }
+QLabel#tabBadge[active="false"] {
+    background: #EADDFF;
+    color: #21005D;
+}
+QLabel#tabBadge[active="true"] {
+    background: #6750A4;
+    color: #FFFFFF;
+}
 QLabel#tabTitle {
     color: #1D1B20;
     font-size: 16px;
+}
+QLabel#tabTitle[active="false"] {
+    color: #49454F;
+}
+QLabel#tabTitle[active="true"] {
+    color: #1D1B20;
+    font-weight: 500;
 }
 QToolButton#tabCloseBtn {
     background: transparent;
@@ -511,13 +553,13 @@ QToolButton#tabCloseBtn:hover {
     background: rgba(29, 27, 32, 0.08);
 }
 QToolButton#newTabBtn {
-    background: #F1EAF8;
+    background: #F3EDF7;
     border: 0;
-    border-radius: 7px;
-    min-width: 48px;
-    min-height: 34px;
-    max-width: 48px;
-    max-height: 34px;
+    border-radius: 22px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 44px;
+    max-height: 44px;
 }
 QToolButton#newTabBtn:hover { background: #EADDFF; }
 QStackedWidget#pages {
@@ -673,6 +715,9 @@ class BrowserTab(QWebEngineView):
 
 
 class TabButton(QWidget):
+    WIDTH = 260
+    HEIGHT = 52
+
     def __init__(
         self,
         index: int,
@@ -683,7 +728,9 @@ class TabButton(QWidget):
         self.index = index
         self.window = window
         self.setObjectName("browserTab")
-        self.setFixedSize(260, 48)
+        self.setFixedHeight(self.HEIGHT)
+        self.setMinimumWidth(self.WIDTH)
+        self.setMaximumWidth(self.WIDTH)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QHBoxLayout(self)
@@ -718,8 +765,10 @@ class TabButton(QWidget):
 
     def set_active(self, active: bool) -> None:
         self.setProperty("active", active)
-        self.style().unpolish(self)
-        self.style().polish(self)
+        for widget in (self, self.icon_label, self.title_label):
+            widget.setProperty("active", active)
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
 
     def set_title(self, title: str) -> None:
         self.title_label.setText(title)
@@ -752,6 +801,7 @@ class BrowserWindow(QMainWindow):
         self._history: list[HistoryEntry] = []
         self._recording_history = True
         self._tab_animations: list[QParallelAnimationGroup] = []
+        self._closing_tabs: set[QWidget] = set()
         self.current_tab_index = -1
 
         self._build_chrome()
@@ -884,7 +934,7 @@ class BrowserWindow(QMainWindow):
         layout.setSpacing(0)
         tab_strip = QWidget()
         tab_strip.setObjectName("tabStrip")
-        tab_strip.setFixedHeight(68)
+        tab_strip.setFixedHeight(66)
         tab_layout = QHBoxLayout(tab_strip)
         tab_layout.setContentsMargins(14, 14, 24, 0)
         tab_layout.setSpacing(12)
@@ -943,55 +993,120 @@ class BrowserWindow(QMainWindow):
         view.titleChanged.connect(lambda title, tab=view: self.update_tab_title(tab, title))
         index = self.pages.addWidget(view)
         tab_button = TabButton(index, APP_TITLE, self)
+        tab_button.setMinimumWidth(0)
+        tab_button.setMaximumWidth(0)
+        tab_button.setFixedHeight(TabButton.HEIGHT)
+        opacity = QGraphicsOpacityEffect(tab_button)
+        opacity.setOpacity(0.0)
+        tab_button.setGraphicsEffect(opacity)
         self.tab_buttons_layout.addWidget(tab_button)
         self.load_home(view)
         self._sync_tab_buttons()
         if switch_to:
             self.select_tab(index)
+        self._animate_tab_open(tab_button, opacity)
         return view
 
     def close_tab(self, index: int) -> None:
         if self.pages.count() == 1:
             self.load_home(self.active_web_view())
             return
-
         view = self.pages.widget(index)
+        if view in self._closing_tabs:
+            return
+
         tab_button = self.tab_buttons_layout.itemAt(index).widget()
         if not isinstance(tab_button, TabButton):
             self._remove_tab(index, view)
             return
 
+        self._closing_tabs.add(view)
+        cur_w = tab_button.width()
         opacity = QGraphicsOpacityEffect(tab_button)
         tab_button.setGraphicsEffect(opacity)
-        tab_button.setMinimumWidth(0)
-        tab_button.setMaximumWidth(tab_button.width())
+        tab_button.setMinimumWidth(cur_w)
+        tab_button.setMaximumWidth(cur_w)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(160)
+        fade.setDuration(200)
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
-        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+        fade.setEasingCurve(QEasingCurve.Type.InQuad)
 
-        shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
-        shrink.setDuration(180)
-        shrink.setStartValue(tab_button.width())
-        shrink.setEndValue(0)
-        shrink.setEasingCurve(QEasingCurve.Type.OutCubic)
+        max_shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        max_shrink.setDuration(300)
+        max_shrink.setStartValue(tab_button.width())
+        max_shrink.setEndValue(0)
+        max_shrink.setEasingCurve(QEasingCurve.Type.InOutQuint)
+
+        min_shrink = QPropertyAnimation(tab_button, b"minimumWidth", self)
+        min_shrink.setDuration(300)
+        min_shrink.setStartValue(tab_button.width())
+        min_shrink.setEndValue(0)
+        min_shrink.setEasingCurve(QEasingCurve.Type.InOutQuint)
 
         group = QParallelAnimationGroup(self)
         group.addAnimation(fade)
-        group.addAnimation(shrink)
+        group.addAnimation(max_shrink)
+        group.addAnimation(min_shrink)
         self._tab_animations.append(group)
-        group.finished.connect(lambda: self._finish_close_animation(group, index, view))
+        group.finished.connect(lambda: self._finish_close_animation(group, tab_button, view))
         group.start()
+
+    def _animate_tab_open(
+        self,
+        tab_button: TabButton,
+        opacity: QGraphicsOpacityEffect,
+    ) -> None:
+        min_grow = QPropertyAnimation(tab_button, b"minimumWidth", self)
+        min_grow.setDuration(350)
+        min_grow.setStartValue(0)
+        min_grow.setEndValue(TabButton.WIDTH)
+        min_grow.setEasingCurve(QEasingCurve.Type.OutQuint)
+
+        max_grow = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        max_grow.setDuration(350)
+        max_grow.setStartValue(0)
+        max_grow.setEndValue(TabButton.WIDTH)
+        max_grow.setEasingCurve(QEasingCurve.Type.OutQuint)
+
+        fade = QPropertyAnimation(opacity, b"opacity", self)
+        fade.setDuration(300)
+        fade.setStartValue(0.0)
+        fade.setEndValue(1.0)
+        fade.setEasingCurve(QEasingCurve.Type.OutQuad)
+
+        group = QParallelAnimationGroup(self)
+        group.addAnimation(min_grow)
+        group.addAnimation(max_grow)
+        group.addAnimation(fade)
+        self._tab_animations.append(group)
+        group.finished.connect(lambda: self._finish_open_animation(group, tab_button))
+        group.start()
+
+    def _finish_open_animation(
+        self,
+        animation: QParallelAnimationGroup,
+        tab_button: TabButton,
+    ) -> None:
+        if animation in self._tab_animations:
+            self._tab_animations.remove(animation)
+        tab_button.setGraphicsEffect(None)
+        tab_button.setMinimumWidth(TabButton.WIDTH)
+        tab_button.setMaximumWidth(TabButton.WIDTH)
 
     def _finish_close_animation(
         self,
         animation: QParallelAnimationGroup,
-        index: int,
+        tab_button: TabButton,
         view: QWidget,
     ) -> None:
-        self._tab_animations.remove(animation)
+        if animation in self._tab_animations:
+            self._tab_animations.remove(animation)
+        self._closing_tabs.discard(view)
+        index = self.tab_buttons_layout.indexOf(tab_button)
+        if index == -1:
+            index = self.pages.indexOf(view)
         self._remove_tab(index, view)
 
     def _remove_tab(self, index: int, view: QWidget) -> None:
