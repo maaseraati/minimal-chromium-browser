@@ -20,6 +20,8 @@ qt_add_executable(morphine
     src/browserwindow.h
     src/browsertab.cpp
     src/browsertab.h
+    src/settingsdialog.cpp
+    src/settingsdialog.h
 )
 
 target_link_libraries(morphine

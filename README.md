@@ -20,9 +20,12 @@ Qt WebEngine, а приложение реализует собственную 
 - Session restore: открытые вкладки восстанавливаются между запусками.
 - Кнопки `Back`, `Forward`, `Reload`, `Home`, `Go`.
 - Горячие клавиши: `Ctrl+T`, `Ctrl+W`, `Ctrl+L`, `Ctrl+Tab`,
-  `Ctrl+Shift+Tab`, `Ctrl+D`, `Ctrl+B`, `Ctrl+H`, `Ctrl+F`,
+  `Ctrl+Shift+Tab`, `Ctrl+D`, `Ctrl+B`, `Ctrl+H`, `Ctrl+F`, `Ctrl+,`,
   `Alt+Left`, `Alt+Right`, `Alt+Home`, `Ctrl+R`, `F5`.
 - Общий профиль Chromium с persistent cookies, storage и disk cache.
+- Settings: меню (☰) или `Ctrl+,` — настройка home page URL, search URL
+  template, downloads directory, restore session, плюс кнопки очистки
+  history, bookmarks и cookies/cache.
 
 ## Почему такой стек
 

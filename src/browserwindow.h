@@ -28,12 +28,17 @@ private slots:
     void hideFindBar();
     void openSelectedListItem(QListWidgetItem *item);
     void showFindBar();
+    void showSettings();
     void updateWindowTitle();
 
 private:
     void addHistoryEntry(const QString &title, const QUrl &url);
     void addTabWithUrl(const QUrl &url);
     void addTabWithPage(QWebEnginePage *page);
+    void applyDownloadPath();
+    void clearBookmarksAll();
+    void clearBrowsingData();
+    void clearHistoryAll();
     BrowserTab *currentTab() const;
     BrowserTab *tabAt(int index) const;
     void cycleTabs(int delta);
