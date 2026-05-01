@@ -257,23 +257,7 @@ HOME_HTML_TEMPLATE = """
       height: 18px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --md-sys-color-primary: #D0BCFF;
-        --md-sys-color-on-primary: #381E72;
-        --md-sys-color-primary-hover: #C0ADEC;
-        --md-sys-color-primary-pressed: #B49BE0;
-        --md-sys-color-primary-container: #4F378B;
-        --md-sys-color-on-primary-container: #EADDFF;
-        --md-sys-color-surface: #141218;
-        --md-sys-color-on-surface: #E6E0E9;
-        --md-sys-color-on-surface-variant: #CAC4D0;
-        --md-sys-color-surface-container: #211F26;
-        --md-sys-color-surface-container-high: #2B2930;
-        --md-sys-color-outline: #938F99;
-        --md-sys-color-outline-variant: #49454F;
-      }
-    }
+
   </style>
 </head>
 <body>
@@ -744,7 +728,9 @@ class TabButton(QWidget):
         self.index = index
         self.window = window
         self.setObjectName("browserTab")
-        self.setFixedSize(self.WIDTH, self.HEIGHT)
+        self.setFixedHeight(self.HEIGHT)
+        self.setMinimumWidth(self.WIDTH)
+        self.setMaximumWidth(self.WIDTH)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QHBoxLayout(self)
@@ -1009,6 +995,7 @@ class BrowserWindow(QMainWindow):
         tab_button = TabButton(index, APP_TITLE, self)
         tab_button.setMinimumWidth(0)
         tab_button.setMaximumWidth(0)
+        tab_button.setFixedHeight(TabButton.HEIGHT)
         opacity = QGraphicsOpacityEffect(tab_button)
         opacity.setOpacity(0.0)
         tab_button.setGraphicsEffect(opacity)
@@ -1034,26 +1021,34 @@ class BrowserWindow(QMainWindow):
             return
 
         self._closing_tabs.add(view)
+        cur_w = tab_button.width()
         opacity = QGraphicsOpacityEffect(tab_button)
         tab_button.setGraphicsEffect(opacity)
-        tab_button.setMinimumWidth(0)
-        tab_button.setMaximumWidth(tab_button.width())
+        tab_button.setMinimumWidth(cur_w)
+        tab_button.setMaximumWidth(cur_w)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(140)
+        fade.setDuration(200)
         fade.setStartValue(1.0)
         fade.setEndValue(0.0)
-        fade.setEasingCurve(QEasingCurve.Type.InCubic)
+        fade.setEasingCurve(QEasingCurve.Type.InQuad)
 
-        shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
-        shrink.setDuration(220)
-        shrink.setStartValue(tab_button.width())
-        shrink.setEndValue(0)
-        shrink.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        max_shrink = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        max_shrink.setDuration(300)
+        max_shrink.setStartValue(tab_button.width())
+        max_shrink.setEndValue(0)
+        max_shrink.setEasingCurve(QEasingCurve.Type.InOutQuint)
+
+        min_shrink = QPropertyAnimation(tab_button, b"minimumWidth", self)
+        min_shrink.setDuration(300)
+        min_shrink.setStartValue(tab_button.width())
+        min_shrink.setEndValue(0)
+        min_shrink.setEasingCurve(QEasingCurve.Type.InOutQuint)
 
         group = QParallelAnimationGroup(self)
         group.addAnimation(fade)
-        group.addAnimation(shrink)
+        group.addAnimation(max_shrink)
+        group.addAnimation(min_shrink)
         self._tab_animations.append(group)
         group.finished.connect(lambda: self._finish_close_animation(group, tab_button, view))
         group.start()
@@ -1063,20 +1058,27 @@ class BrowserWindow(QMainWindow):
         tab_button: TabButton,
         opacity: QGraphicsOpacityEffect,
     ) -> None:
-        grow = QPropertyAnimation(tab_button, b"maximumWidth", self)
-        grow.setDuration(240)
-        grow.setStartValue(0)
-        grow.setEndValue(TabButton.WIDTH)
-        grow.setEasingCurve(QEasingCurve.Type.OutCubic)
+        min_grow = QPropertyAnimation(tab_button, b"minimumWidth", self)
+        min_grow.setDuration(350)
+        min_grow.setStartValue(0)
+        min_grow.setEndValue(TabButton.WIDTH)
+        min_grow.setEasingCurve(QEasingCurve.Type.OutQuint)
+
+        max_grow = QPropertyAnimation(tab_button, b"maximumWidth", self)
+        max_grow.setDuration(350)
+        max_grow.setStartValue(0)
+        max_grow.setEndValue(TabButton.WIDTH)
+        max_grow.setEasingCurve(QEasingCurve.Type.OutQuint)
 
         fade = QPropertyAnimation(opacity, b"opacity", self)
-        fade.setDuration(180)
+        fade.setDuration(300)
         fade.setStartValue(0.0)
         fade.setEndValue(1.0)
-        fade.setEasingCurve(QEasingCurve.Type.OutCubic)
+        fade.setEasingCurve(QEasingCurve.Type.OutQuad)
 
         group = QParallelAnimationGroup(self)
-        group.addAnimation(grow)
+        group.addAnimation(min_grow)
+        group.addAnimation(max_grow)
         group.addAnimation(fade)
         self._tab_animations.append(group)
         group.finished.connect(lambda: self._finish_open_animation(group, tab_button))
