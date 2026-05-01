@@ -36,12 +36,39 @@ jobs:
         shell: cmd
         run: cmake --build build
 
-      - name: Stage binary + Qt runtime
+      - name: Stage binary + Qt runtime (slim)
         shell: cmd
         run: |
           mkdir dist
           copy build\morphine.exe dist\morphine.exe
-          windeployqt --release --dir dist dist\morphine.exe
+          windeployqt ^
+            --release ^
+            --no-translations ^
+            --no-system-d3d-compiler ^
+            --no-quick-import ^
+            --no-virtualkeyboard ^
+            --skip-plugin-types sqldrivers,sceneparsers,texttospeech,multimedia ^
+            --dir dist dist\morphine.exe
+
+      - name: Strip Chromium locales (keep en-US + ru)
+        shell: pwsh
+        run: |
+          $locales = Get-ChildItem -Path dist -Recurse -Filter "qtwebengine_locales" -Directory
+          foreach ($dir in $locales) {
+            Get-ChildItem -Path $dir.FullName -Filter "*.pak" |
+              Where-Object { $_.BaseName -notin @("en-US","ru") } |
+              Remove-Item -Force
+          }
+          # Strip Qt's own .qm translations (we passed --no-translations but be defensive)
+          Get-ChildItem -Path dist -Recurse -Filter "*.qm" -ErrorAction SilentlyContinue |
+            Remove-Item -Force -ErrorAction SilentlyContinue
+
+      - name: Show dist size
+        shell: pwsh
+        run: |
+          $size = (Get-ChildItem -Path dist -Recurse | Measure-Object -Property Length -Sum).Sum
+          "{0:N1} MB on disk" -f ($size / 1MB)
+          Get-ChildItem -Path dist | Select-Object Name, Length | Sort-Object Length -Descending | Select-Object -First 15
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -50,3 +77,4 @@ jobs:
           path: dist
           if-no-files-found: error
           retention-days: 30
+          compression-level: 9
