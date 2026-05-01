@@ -1,6 +1,7 @@
 #include "browserwindow.h"
 
 #include "browsertab.h"
+#include "settingsdialog.h"
 
 #include <QCloseEvent>
 #include <QDir>
@@ -11,6 +12,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QPushButton>
 #include <QShortcut>
 #include <QSplitter>
@@ -21,6 +23,7 @@
 #include <QToolButton>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QWebEngineCookieStore>
 #include <QWebEngineDownloadRequest>
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
@@ -75,6 +78,26 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     newTabButton->setCursor(Qt::PointingHandCursor);
     tabs_->setCornerWidget(newTabButton, Qt::TopRightCorner);
 
+    auto *menuButton = new QToolButton(this);
+    menuButton->setText(QStringLiteral("\u2630"));
+    menuButton->setToolTip(QStringLiteral("Menu"));
+    menuButton->setAutoRaise(true);
+    menuButton->setCursor(Qt::PointingHandCursor);
+    menuButton->setPopupMode(QToolButton::InstantPopup);
+    auto *menu = new QMenu(menuButton);
+    auto *settingsAction = menu->addAction(QStringLiteral("Settings\u2026"));
+    settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(settingsAction, &QAction::triggered, this, &BrowserWindow::showSettings);
+    menu->addSeparator();
+    auto *bookmarksAction = menu->addAction(QStringLiteral("Bookmarks"));
+    bookmarksAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_B));
+    connect(bookmarksAction, &QAction::triggered, this, [this] { showSidePanel(0); });
+    auto *historyAction = menu->addAction(QStringLiteral("History"));
+    historyAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_H));
+    connect(historyAction, &QAction::triggered, this, [this] { showSidePanel(1); });
+    menuButton->setMenu(menu);
+    tabs_->setCornerWidget(menuButton, Qt::TopLeftCorner);
+
     connect(newTabButton, &QToolButton::clicked, this, &BrowserWindow::addTab);
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
     connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
@@ -123,6 +146,7 @@ BrowserWindow::BrowserWindow(QWidget *parent)
     });
     new QShortcut(QKeySequence::Find, this, SLOT(showFindBar()));
     new QShortcut(QKeySequence(Qt::Key_Escape), this, SLOT(hideFindBar()));
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma), this, SLOT(showSettings()));
 
     resize(1280, 820);
     loadBookmarks();
@@ -325,11 +349,13 @@ void BrowserWindow::loadHistory()
 
 void BrowserWindow::restoreSession()
 {
-    const QStringList urls = settings_.value(QStringLiteral("session/urls")).toStringList();
-    for (const QString &url : urls) {
-        const QUrl parsedUrl(url);
-        if (parsedUrl.isValid()) {
-            addTabWithUrl(parsedUrl);
+    if (SettingsDialog::restoreSessionEnabled()) {
+        const QStringList urls = settings_.value(QStringLiteral("session/urls")).toStringList();
+        for (const QString &url : urls) {
+            const QUrl parsedUrl(url);
+            if (parsedUrl.isValid()) {
+                addTabWithUrl(parsedUrl);
+            }
         }
     }
 
@@ -370,10 +396,7 @@ void BrowserWindow::saveSession()
 
 void BrowserWindow::setupDownloads()
 {
-    const QString downloadPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    if (!downloadPath.isEmpty()) {
-        profile_->setDownloadPath(downloadPath);
-    }
+    applyDownloadPath();
 
     connect(profile_, &QWebEngineProfile::downloadRequested, this, [this](QWebEngineDownloadRequest *download) {
         const QString directory =
@@ -391,6 +414,49 @@ void BrowserWindow::setupDownloads()
             statusBar()->showMessage(message, 7000);
         });
     });
+}
+
+void BrowserWindow::applyDownloadPath()
+{
+    const QString configured = SettingsDialog::downloadDirectory();
+    if (!configured.isEmpty()) {
+        QDir().mkpath(configured);
+        profile_->setDownloadPath(configured);
+    }
+}
+
+void BrowserWindow::showSettings()
+{
+    SettingsDialog dialog(this);
+    connect(&dialog, &SettingsDialog::settingsChanged, this, [this] {
+        applyDownloadPath();
+    });
+    connect(&dialog, &SettingsDialog::clearHistoryRequested, this, &BrowserWindow::clearHistoryAll);
+    connect(&dialog, &SettingsDialog::clearBookmarksRequested, this, &BrowserWindow::clearBookmarksAll);
+    connect(&dialog, &SettingsDialog::clearBrowsingDataRequested, this, &BrowserWindow::clearBrowsingData);
+    dialog.exec();
+}
+
+void BrowserWindow::clearHistoryAll()
+{
+    historyList_->clear();
+    settings_.remove(QStringLiteral("history"));
+    statusBar()->showMessage(QStringLiteral("History cleared"), 3000);
+}
+
+void BrowserWindow::clearBookmarksAll()
+{
+    bookmarksList_->clear();
+    saveBookmarks();
+    statusBar()->showMessage(QStringLiteral("Bookmarks cleared"), 3000);
+}
+
+void BrowserWindow::clearBrowsingData()
+{
+    profile_->cookieStore()->deleteAllCookies();
+    profile_->clearAllVisitedLinks();
+    profile_->clearHttpCache();
+    statusBar()->showMessage(QStringLiteral("Cookies and cache cleared"), 3000);
 }
 
 void BrowserWindow::setupFindBar()

@@ -1,6 +1,7 @@
 #include "browsertab.h"
 
 #include "browserpage.h"
+#include "settingsdialog.h"
 
 #include <QHBoxLayout>
 #include <QIcon>
@@ -20,7 +21,6 @@
 
 namespace {
 constexpr auto kHomeUrl = "morphine://home";
-constexpr auto kSearchUrl = "https://www.google.com/search";
 
 auto makeToolButton(const QString &text, const QString &toolTip) -> QToolButton *
 {
@@ -174,10 +174,16 @@ void BrowserTab::findInPage(const QString &text, bool backwards)
 
 void BrowserTab::loadHome()
 {
-    currentTitle_ = QStringLiteral("Morphine");
-    addressBar_->clear();
-    webView_->setHtml(homeHtml(), QUrl(kHomeUrl));
-    emit titleChanged(currentTitle_);
+    const QString configured = SettingsDialog::homeUrl();
+    if (configured == QString::fromLatin1(kHomeUrl)) {
+        currentTitle_ = QStringLiteral("Morphine");
+        addressBar_->clear();
+        webView_->setHtml(homeHtml(), QUrl(kHomeUrl));
+        emit titleChanged(currentTitle_);
+        return;
+    }
+
+    webView_->load(QUrl::fromUserInput(configured));
 }
 
 void BrowserTab::loadInput(const QString &input)
@@ -204,11 +210,12 @@ QUrl BrowserTab::inputToUrl(const QString &input) const
         return QUrl(QStringLiteral("https://") + input);
     }
 
-    QUrl searchUrl(kSearchUrl);
-    QUrlQuery query;
-    query.addQueryItem(QStringLiteral("q"), input);
-    searchUrl.setQuery(query);
-    return searchUrl;
+    QString templateUrl = SettingsDialog::searchUrl();
+    if (!templateUrl.contains(QStringLiteral("%1"))) {
+        templateUrl = SettingsDialog::defaultSearchUrl();
+    }
+    const QString encoded = QString::fromLatin1(QUrl::toPercentEncoding(input));
+    return QUrl(templateUrl.arg(encoded));
 }
 
 void BrowserTab::installPage(QWebEnginePage *page)
