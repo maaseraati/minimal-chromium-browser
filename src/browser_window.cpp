@@ -45,10 +45,10 @@ QWidget#tabStrip { background: #f7fbff; border-top: 1px solid #d9e8fb; border-le
 QWidget#chromeBar { background: #edf6ff; border: 1px solid rgba(150,184,236,.36); border-top: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
 QWidget#browserTab { background: transparent; border: 0; color: #28415f; }
 QLabel#tabBadge { color: #476285; font-size: 14px; font-weight: 700; }
-QLabel#tabTitle { color: #102b4d; font-size: 14px; font-weight: 800; }
+QLabel#tabTitle { color: #102b4d; font-size: 13px; font-weight: 700; }
 QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; }
 QWidget#browserTab[active="true"] QLabel#tabBadge { color: #fff; }
-QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 9px; min-width: 18px; min-height: 18px; max-width: 18px; max-height: 18px; }
+QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 8px; min-width: 16px; min-height: 16px; max-width: 16px; max-height: 16px; }
 QToolButton#tabCloseBtn:hover { background: rgba(47,126,234,.14); }
 QWidget#browserTab[active="true"] QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
 QWidget#tabSpacer { min-width: 4px; }
