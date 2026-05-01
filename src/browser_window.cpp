@@ -42,18 +42,17 @@ BrowserWindow::BrowserWindow()
     setStyleSheet(QStringLiteral(R"(
 QMainWindow, QWidget#chromeRoot, QWidget#appShell, QStackedWidget#pages { background: #f7fbff; }
 QWidget#tabStrip { background: #f7fbff; border-top: 1px solid #d9e8fb; border-left: 1px solid #d9e8fb; border-right: 1px solid #d9e8fb; border-top-left-radius: 18px; border-top-right-radius: 18px; }
-QWidget#tabButtonsContainer { max-width: 540px; }
 QWidget#chromeBar { background: #edf6ff; border: 1px solid rgba(150,184,236,.36); border-top: 0; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
-QWidget#browserTab { background: #e8f2ff; border: 1px solid rgba(127,169,232,.32); border-bottom: 0; border-top-left-radius: 15px; border-top-right-radius: 15px; color: #476285; }
-QWidget#browserTab:hover { background: #f1f7ff; border-color: rgba(47,126,234,.28); }
-QWidget#browserTab[active="true"] { background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 #73abff, stop:1 #4e8ff0); border-top-left-radius: 15px; border-top-right-radius: 15px; color: #fff; }
+QWidget#browserTab { background: transparent; border: 0; color: #28415f; }
 QLabel#tabBadge { color: #476285; font-size: 14px; font-weight: 700; }
-QLabel#tabTitle { color: #243d60; font-size: 15px; font-weight: 600; }
+QLabel#tabTitle { color: #102b4d; font-size: 14px; font-weight: 800; }
 QWidget#browserTab[active="true"] QLabel#tabTitle { color: #fff; }
 QWidget#browserTab[active="true"] QLabel#tabBadge { color: #fff; }
-QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 10px; min-width: 20px; min-height: 20px; max-width: 20px; max-height: 20px; }
-QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
-QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 19px; min-width: 38px; min-height: 38px; max-width: 38px; max-height: 38px; }
+QToolButton#tabCloseBtn { background: transparent; border: 0; border-radius: 9px; min-width: 18px; min-height: 18px; max-width: 18px; max-height: 18px; }
+QToolButton#tabCloseBtn:hover { background: rgba(47,126,234,.14); }
+QWidget#browserTab[active="true"] QToolButton#tabCloseBtn:hover { background: rgba(255,255,255,.28); }
+QWidget#tabSpacer { min-width: 4px; }
+QToolButton#newTabBtn { background: rgba(47,126,234,.08); border: 0; border-radius: 17px; min-width: 34px; min-height: 34px; max-width: 34px; max-height: 34px; }
 QToolButton#newTabBtn:hover { background: rgba(47,126,234,.14); }
 QToolButton[chromeNav="true"], QToolButton#dotsBtn { background: transparent; border: 0; border-radius: 20px; min-width: 40px; min-height: 40px; max-height: 40px; }
 QToolButton[chromeNav="true"]:hover, QToolButton#dotsBtn:hover { background: rgba(47,126,234,.10); }
@@ -186,28 +185,32 @@ void BrowserWindow::buildCentral()
 
     auto *tabStrip = new TabStrip(this);
     tabStrip->setObjectName("tabStrip");
-    tabStrip->setFixedHeight(58);
+    tabStrip->setFixedHeight(48);
     auto *tabLayout = new QHBoxLayout(tabStrip);
-    tabLayout->setContentsMargins(16, 9, 18, 0);
-    tabLayout->setSpacing(10);
+    tabLayout->setContentsMargins(14, 4, 18, 0);
+    tabLayout->setSpacing(4);
 
     m_tabButtonsContainer = new QWidget;
     m_tabButtonsContainer->setObjectName("tabButtonsContainer");
-    m_tabButtonsContainer->setMaximumWidth(540);
+    m_tabButtonsContainer->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     m_tabButtonsLayout = new QHBoxLayout(m_tabButtonsContainer);
     m_tabButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    m_tabButtonsLayout->setSpacing(8);
+    m_tabButtonsLayout->setSpacing(3);
     tabLayout->addWidget(m_tabButtonsContainer);
 
     auto *newTabButton = new QToolButton;
     newTabButton->setObjectName("newTabBtn");
     newTabButton->setIcon(svgIcon("add", PrimaryColor, 20));
-    newTabButton->setIconSize(QSize(20, 20));
+    newTabButton->setIconSize(QSize(18, 18));
     newTabButton->setCursor(Qt::PointingHandCursor);
     newTabButton->setAutoRaise(true);
     connect(newTabButton, &QToolButton::clicked, this, [this]() { addTab(true); });
     tabLayout->addWidget(newTabButton);
-    tabLayout->addStretch();
+
+    auto *tabSpacer = new QWidget;
+    tabSpacer->setObjectName("tabSpacer");
+    tabSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    tabLayout->addWidget(tabSpacer, 1);
 
     auto *windowControls = new QWidget;
     windowControls->setObjectName("windowControls");
