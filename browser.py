@@ -33,7 +33,10 @@ HOME_URL = "morphine://home"
 HISTORY_URL = "morphine://history"
 GOOGLE_SEARCH_URL = "https://www.google.com/search?q="
 
-ASSETS_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    ASSETS_DIR = Path(sys._MEIPASS)
+else:
+    ASSETS_DIR = Path(__file__).resolve().parent
 LOGO_PATH = ASSETS_DIR / "morphine_logo.png"
 
 HOME_HTML_TEMPLATE = """
