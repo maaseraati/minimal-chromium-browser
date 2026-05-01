@@ -25,9 +25,11 @@ public:
     QIcon icon() const;
     QUrl url() const;
     bool isLoading() const;
+    bool isRestorableUrl() const;
 
 public slots:
     void focusAddressBar();
+    void findInPage(const QString &text, bool backwards = false);
     void loadHome();
     void loadInput(const QString &input);
 

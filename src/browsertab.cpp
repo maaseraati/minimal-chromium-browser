@@ -145,10 +145,31 @@ bool BrowserTab::isLoading() const
     return isLoading_;
 }
 
+bool BrowserTab::isRestorableUrl() const
+{
+    const QUrl currentUrl = url();
+    return currentUrl.isValid() && currentUrl.toString() != kHomeUrl;
+}
+
 void BrowserTab::focusAddressBar()
 {
     addressBar_->setFocus();
     addressBar_->selectAll();
+}
+
+void BrowserTab::findInPage(const QString &text, bool backwards)
+{
+    if (text.isEmpty()) {
+        webView_->page()->findText(QString());
+        return;
+    }
+
+    QWebEnginePage::FindFlags flags;
+    if (backwards) {
+        flags |= QWebEnginePage::FindBackward;
+    }
+
+    webView_->page()->findText(text, flags);
 }
 
 void BrowserTab::loadHome()

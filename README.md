@@ -13,9 +13,15 @@ Qt WebEngine, а приложение реализует собственную 
 - Вкладки: новая вкладка, закрытие, переключение, drag-reorder, favicons.
 - Ссылки с `target=_blank` и запросы нового окна открываются в новой вкладке.
 - Loading state: progress bar, stop/reload button, индикатор загрузки в заголовке вкладки/окна.
+- Bookmarks: `Ctrl+D` добавляет текущую страницу, `Ctrl+B` открывает боковую панель.
+- History: последние 100 страниц сохраняются, `Ctrl+H` открывает боковую панель.
+- Downloads: файлы автоматически сохраняются в системную папку Downloads, статус виден снизу.
+- Find in page: `Ctrl+F` открывает find bar, есть поиск вперёд/назад.
+- Session restore: открытые вкладки восстанавливаются между запусками.
 - Кнопки `Back`, `Forward`, `Reload`, `Home`, `Go`.
 - Горячие клавиши: `Ctrl+T`, `Ctrl+W`, `Ctrl+L`, `Ctrl+Tab`,
-  `Ctrl+Shift+Tab`, `Alt+Left`, `Alt+Right`, `Alt+Home`, `Ctrl+R`, `F5`.
+  `Ctrl+Shift+Tab`, `Ctrl+D`, `Ctrl+B`, `Ctrl+H`, `Ctrl+F`,
+  `Alt+Left`, `Alt+Right`, `Alt+Home`, `Ctrl+R`, `F5`.
 - Общий профиль Chromium с persistent cookies, storage и disk cache.
 
 ## Почему такой стек
@@ -125,11 +131,7 @@ cmake --build build
 
 ## Roadmap
 
-- bookmarks;
-- history UI;
-- downloads shelf;
-- find in page;
 - settings page;
 - private windows;
 - simple ad/tracker blocker;
-- session restore.
+- downloads shelf with progress/cancel controls.
