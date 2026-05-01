@@ -45,6 +45,8 @@ jobs:
             --release ^
             --no-translations ^
             --no-system-d3d-compiler ^
+            --no-compiler-runtime ^
+            --no-opengl-sw ^
             --no-quick-import ^
             --skip-plugin-types sqldrivers,sceneparsers,texttospeech,multimedia ^
             --dir dist dist\morphine.exe
