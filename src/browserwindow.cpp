@@ -18,7 +18,9 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPropertyAnimation>
 #include <QPushButton>
+#include <QEasingCurve>
 #include <QShortcut>
 #include <QSplitter>
 #include <QStatusBar>
@@ -51,6 +53,8 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
       sidePanel_(new QTabWidget(this)),
       findBar_(new QWidget(this)),
       findInput_(new QLineEdit(this)),
+      tabIndicator_(new QWidget(this)),
+      tabIndicatorAnimation_(new QPropertyAnimation(tabIndicator_, "geometry", this)),
       isPrivate_(isPrivate)
 {
     if (!isPrivate_) {
@@ -70,6 +74,10 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->tabBar()->setExpanding(false);
     tabs_->tabBar()->installEventFilter(this);
+    tabIndicator_->setObjectName(QStringLiteral("tabIndicator"));
+    tabIndicator_->hide();
+    tabIndicatorAnimation_->setDuration(150);
+    tabIndicatorAnimation_->setEasingCurve(QEasingCurve::OutCubic);
 
     setupDownloads();
     setupFindBar();
@@ -182,7 +190,10 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L), this,
                   [] { ThemeManager::instance()->toggle(); });
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
-    connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
+    connect(tabs_, &QTabWidget::currentChanged, this, [this] {
+        animateTabIndicator();
+        updateWindowTitle();
+    });
 
     new QShortcut(QKeySequence::AddTab, this, SLOT(addTab()));
     new QShortcut(QKeySequence::Close, this, [this] {
@@ -260,6 +271,9 @@ bool BrowserWindow::eventFilter(QObject *watched, QEvent *event)
                     return true;
                 }
             }
+        } else if (event->type() == QEvent::Enter || event->type() == QEvent::Leave
+                   || event->type() == QEvent::MouseMove) {
+            tabs_->tabBar()->update();
         } else if (event->type() == QEvent::MouseButtonDblClick) {
             auto *me = static_cast<QMouseEvent *>(event);
             if (tabs_->tabBar()->tabAt(me->pos()) == -1) {
@@ -370,6 +384,7 @@ void BrowserWindow::addTabWithUrl(const QUrl &url)
 
     const int index = tabs_->addTab(tab, tab->title());
     tabs_->setCurrentIndex(index);
+    refreshTabMetrics();
 
     if (!url.isEmpty()) {
         tab->view()->load(url);
@@ -388,6 +403,7 @@ void BrowserWindow::addTabWithPage(QWebEnginePage *page)
 
     const int index = tabs_->addTab(tab, tab->icon(), tab->title());
     tabs_->setCurrentIndex(index);
+    refreshTabMetrics();
     if (!isPrivate_) {
         saveSession();
     }
@@ -403,6 +419,7 @@ void BrowserWindow::closeTab(int index)
     QWidget *widget = tabs_->widget(index);
     tabs_->removeTab(index);
     widget->deleteLater();
+    refreshTabMetrics();
     updateWindowTitle();
     if (!isPrivate_) {
         saveSession();
@@ -698,6 +715,40 @@ void BrowserWindow::showSidePanel(int pageIndex)
 
     sidePanel_->setCurrentIndex(pageIndex);
     sidePanel_->show();
+}
+
+void BrowserWindow::animateTabIndicator()
+{
+    const int index = tabs_->currentIndex();
+    if (index < 0) {
+        tabIndicator_->hide();
+        return;
+    }
+
+    const QRect tabRect = tabs_->tabBar()->tabRect(index);
+    const QPoint topLeft = tabs_->tabBar()->mapTo(this, tabRect.bottomLeft());
+    const QRect target(topLeft.x() + 16, topLeft.y() - 3, qMax(24, tabRect.width() - 32), 3);
+
+    if (!tabIndicator_->isVisible()) {
+        tabIndicator_->setGeometry(target);
+        tabIndicator_->show();
+        tabIndicator_->raise();
+        return;
+    }
+
+    tabIndicatorAnimation_->stop();
+    tabIndicatorAnimation_->setStartValue(tabIndicator_->geometry());
+    tabIndicatorAnimation_->setEndValue(target);
+    tabIndicatorAnimation_->start();
+    tabIndicator_->raise();
+}
+
+void BrowserWindow::refreshTabMetrics()
+{
+    tabs_->tabBar()->setFixedHeight(42);
+    tabs_->tabBar()->setUsesScrollButtons(true);
+    tabs_->tabBar()->setIconSize(QSize(16, 16));
+    animateTabIndicator();
 }
 
 void BrowserWindow::updateTabChrome(BrowserTab *tab)

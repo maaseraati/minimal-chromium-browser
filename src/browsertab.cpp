@@ -55,6 +55,7 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
     addressBar_->setClearButtonEnabled(false);
     addressBar_->setPlaceholderText("Enter URL or search Google");
     addressBar_->setMinimumHeight(36);
+    addressBar_->setTextMargins(6, 0, 0, 0);
     lockAction_ = addressBar_->addAction(QIcon(), QLineEdit::LeadingPosition);
     updateAddressLockVisible();
 
@@ -71,14 +72,14 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
             [this](bool) { refreshIcons(); });
 
     auto *toolbar = new QHBoxLayout;
-    toolbar->setContentsMargins(12, 8, 12, 8);
-    toolbar->setSpacing(4);
+    toolbar->setContentsMargins(12, 7, 12, 8);
+    toolbar->setSpacing(6);
     toolbar->addWidget(backButton_);
     toolbar->addWidget(forwardButton_);
     toolbar->addWidget(reloadButton_);
-    toolbar->addSpacing(4);
+    toolbar->addSpacing(2);
     toolbar->addWidget(addressBar_, 1);
-    toolbar->addSpacing(4);
+    toolbar->addSpacing(2);
     toolbar->addWidget(primaryAction_);
 
     auto *layout = new QVBoxLayout(this);
