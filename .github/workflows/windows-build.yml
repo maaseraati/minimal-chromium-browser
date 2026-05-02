@@ -97,18 +97,11 @@ jobs:
             Sort-Object Length -Descending |
             Select-Object -First 15 FullName, Length
 
-      - name: Pack dist as zip
-        shell: pwsh
-        run: |
-          Compress-Archive -Path .\dist\* -DestinationPath morphine-windows-x64.zip -CompressionLevel Optimal
-          $z = Get-Item morphine-windows-x64.zip
-          "{0:N1} MB packed" -f ($z.Length / 1MB)
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: morphine-windows-x64
-          path: morphine-windows-x64.zip
+          path: dist
           if-no-files-found: error
           retention-days: 30
-          compression-level: 0
+          compression-level: 6
