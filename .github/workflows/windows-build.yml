@@ -52,34 +52,65 @@ jobs:
             --no-compiler-runtime ^
             --no-opengl-sw ^
             --no-quick-import ^
-            --skip-plugin-types sqldrivers,sceneparsers,texttospeech,multimedia ^
+            --skip-plugin-types sqldrivers,sceneparsers,texttospeech,multimedia,generic ^
             --dir dist dist\morphine.exe
 
-      - name: Strip Chromium locales (keep en-US + ru)
+      - name: Trim QtWebEngine + plugin payload
         shell: pwsh
         run: |
-          $locales = Get-ChildItem -Path dist -Recurse -Filter "qtwebengine_locales" -Directory
-          foreach ($dir in $locales) {
-            Get-ChildItem -Path $dir.FullName -Filter "*.pak" |
+          # Strip Chromium locales (keep en-US + ru)
+          Get-ChildItem -Path dist -Recurse -Filter "qtwebengine_locales" -Directory | ForEach-Object {
+            Get-ChildItem -Path $_.FullName -Filter "*.pak" |
               Where-Object { $_.BaseName -notin @("en-US","ru") } |
               Remove-Item -Force
           }
-          # Strip Qt's own .qm translations (we passed --no-translations but be defensive)
+
+          # Strip Qt's own .qm translations (defensive vs --no-translations)
           Get-ChildItem -Path dist -Recurse -Filter "*.qm" -ErrorAction SilentlyContinue |
             Remove-Item -Force -ErrorAction SilentlyContinue
+
+          # Drop the F12 devtools pak (~10 MB) and the 2x HiDPI pak (we run desktop only).
+          $extraPaks = @(
+            "qtwebengine_devtools_resources.pak",
+            "qtwebengine_resources_200p.pak"
+          )
+          foreach ($name in $extraPaks) {
+            Get-ChildItem -Path dist -Recurse -Filter $name -ErrorAction SilentlyContinue |
+              Remove-Item -Force -ErrorAction SilentlyContinue
+          }
+
+          # Trim unused Qt image format plugins (keep png implicit, plus svg/jpeg/gif/ico).
+          $imgKeep = @("qsvg.dll","qjpeg.dll","qgif.dll","qico.dll")
+          $imgDir  = Join-Path dist "imageformats"
+          if (Test-Path $imgDir) {
+            Get-ChildItem -Path $imgDir -Filter "*.dll" |
+              Where-Object { $_.Name -notin $imgKeep } |
+              Remove-Item -Force
+          }
 
       - name: Show dist size
         shell: pwsh
         run: |
           $size = (Get-ChildItem -Path dist -Recurse | Measure-Object -Property Length -Sum).Sum
           "{0:N1} MB on disk" -f ($size / 1MB)
-          Get-ChildItem -Path dist | Select-Object Name, Length | Sort-Object Length -Descending | Select-Object -First 15
+          Get-ChildItem -Path dist -Recurse -File |
+            Sort-Object Length -Descending |
+            Select-Object -First 15 FullName, Length
 
-      - name: Upload artifact
+      - name: Pack dist as solid LZMA2 .7z
+        shell: pwsh
+        run: |
+          # 7z ships with windows-latest. Solid LZMA2 + max dictionary beats the
+          # default zip-9 by ~30% on Qt + Chromium binaries.
+          7z a -t7z -m0=lzma2 -mx=9 -ms=on -mfb=273 -md=128m morphine-windows-x64.7z .\dist\* | Out-Null
+          $z = Get-Item morphine-windows-x64.7z
+          "{0:N1} MB packed" -f ($z.Length / 1MB)
+
+      - name: Upload artifact (.7z, no recompression)
         uses: actions/upload-artifact@v4
         with:
           name: morphine-windows-x64
-          path: dist
+          path: morphine-windows-x64.7z
           if-no-files-found: error
           retention-days: 30
-          compression-level: 9
+          compression-level: 0
