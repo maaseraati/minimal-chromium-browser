@@ -43,7 +43,7 @@ constexpr const char *kCloseIconColor     = "#1a1c1f";
 // Tab sizing -----------------------------------------------------------------
 constexpr int kTabHeight    = 44;
 constexpr int kTabPillRadius = 15;
-constexpr int kBarHeight    = 58;
+constexpr int kBarHeight    = 66;
 constexpr int kPreferredTabWidth = 310;
 constexpr int kMinTabWidth  = 130;
 constexpr int kFaviconSize  = 22;
@@ -436,13 +436,10 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // Strip surface — flat M3 surface-container so it visually unifies with
-    // the toolbar and pane below (no banding between widgets).
-    p.fillRect(rect(), QColor("#eef0f7"));
-
-    // Bottom hairline, like Chrome's top-strip separator.
-    p.setPen(QColor(kStripBorderColor));
-    p.drawLine(0, height() - 1, width(), height() - 1);
+    // Strip surface — flat M3 surface so it visually merges with the
+    // toolbar and corner widgets below (no banding, mirrors the
+    // prototype's `--chrome-top` flowing into `--chrome-bottom`).
+    p.fillRect(rect(), QColor("#fafbff"));
 
     const int current = currentIndex();
     const int total = count();
@@ -495,7 +492,7 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
             p.setOpacity(alpha);
             p.fillPath(path, QColor(kPillBase));
             QPen pen{QColor(kPillBorder)};
-            pen.setWidthF(1.4);
+            pen.setWidthF(2.0);
             p.setPen(pen);
             p.drawPath(path);
             p.restore();

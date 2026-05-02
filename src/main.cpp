@@ -41,18 +41,17 @@ QTabWidget::pane {
 QTabWidget::tab-bar { left: 0; }
 
 QTabWidget::corner {
-    background: #eef0f7;
-    border-bottom: 1px solid #e2e6ee;
+    background: #fafbff;
 }
 
 QWidget#chromeCorner {
-    background: #eef0f7;
-    border-bottom: 1px solid #e2e6ee;
+    background: #fafbff;
 }
 
 QTabBar { background: transparent; qproperty-drawBase: 0; }
 
-/* Menu chip — M3 primary block at the very left of the tab strip. */
+/* Menu chip — M3 primary block at the very left of the tab strip
+   (78x66 with rounded bottom-right, mirrors prototype `.menu-button`). */
 QToolButton#chromeMenu {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                                 stop:0 #4a76b3, stop:1 #2e5a99);
@@ -60,6 +59,10 @@ QToolButton#chromeMenu {
     border: 0;
     border-bottom-right-radius: 16px;
     padding: 0;
+    min-width: 78px;
+    min-height: 66px;
+    max-width: 78px;
+    max-height: 66px;
 }
 
 QToolButton#chromeMenu:hover {
@@ -74,18 +77,22 @@ QToolButton#chromeMenu:pressed {
 
 QToolButton#chromeMenu::menu-indicator { image: none; width: 0; }
 
-/* New-tab pill on the right — light primary-container chip. */
+/* New-tab pill on the right — light primary-container chip. 48x48 with
+   14px radius, exactly like the prototype `.new-tab-button`. */
 QToolButton#chromeNewTab {
     background: #d8e2ff;
     color: #001a41;
-    border: 1px solid #c1d0f5;
+    border: 0;
     border-radius: 14px;
     padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
 QToolButton#chromeNewTab:hover {
     background: #c5d3fa;
-    border-color: #a8baee;
 }
 
 QToolButton#chromeNewTab:pressed {
@@ -94,12 +101,16 @@ QToolButton#chromeNewTab:pressed {
 
 QToolButton#chromeNewTab::menu-indicator { image: none; width: 0; }
 
-/* Window controls (—, □, ×). */
+/* Window controls (—, □, ×) — 28x28 squares with 8px radius. */
 QToolButton#windowControl {
     background: transparent;
     border: 0;
     border-radius: 8px;
     color: #44474e;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
 }
 
 QToolButton#windowControl:hover {
@@ -115,6 +126,10 @@ QToolButton#windowClose {
     border: 0;
     border-radius: 8px;
     color: #44474e;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
 }
 
 QToolButton#windowClose:hover {
@@ -137,12 +152,17 @@ QWidget#chromeToolbar {
     border-bottom: 1px solid #e2e6ee;
 }
 
+/* Back / forward — transparent circles, glyph only. */
 QToolButton#navButton {
     background: transparent;
     color: #44474e;
     border: 0;
     border-radius: 24px;
     padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
 QToolButton#navButton:hover {
@@ -158,29 +178,39 @@ QToolButton#navButton:disabled {
     color: #b6b9c1;
 }
 
+/* Reload — circular primary-container chip (M3 blue equivalent of the
+   prototype's green refresh chip, same shape). */
 QToolButton#navReload {
     background: #d8e2ff;
     color: #001a41;
-    border: 1px solid #c1d0f5;
+    border: 0;
     border-radius: 24px;
     padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
 QToolButton#navReload:hover {
     background: #c5d3fa;
-    border-color: #a8baee;
 }
 
 QToolButton#navReload:pressed {
     background: #b3c4f3;
 }
 
+/* Profile — circular primary-container chip (mirrors `.profile-button`). */
 QToolButton#profileButton {
     background: #d8e2ff;
     color: #001a41;
     border: 0;
     border-radius: 24px;
     padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
 QToolButton#profileButton:hover {
@@ -195,16 +225,19 @@ QToolButton#navButton::menu-indicator,
 QToolButton#navReload::menu-indicator,
 QToolButton#profileButton::menu-indicator { image: none; width: 0; }
 
-/* Omnibox — pill input matching the prototype. */
+/* Omnibox — pill input mirroring the prototype `.omnibox` (height 46,
+   23px radius, padding 0 20). */
 QLineEdit#omnibox {
-    background: #eef0f7;
+    background: #fbfcff;
     color: #1a1c1f;
     border: 1px solid #e2e6ee;
     border-radius: 23px;
-    padding: 6px 20px;
+    padding: 0 20px;
     selection-background-color: #d8e2ff;
     selection-color: #001a41;
     font-size: 14px;
+    min-height: 46px;
+    max-height: 46px;
 }
 
 QLineEdit#omnibox:focus {

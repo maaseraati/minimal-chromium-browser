@@ -157,7 +157,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     menuButton_->setAutoRaise(false);
     menuButton_->setCursor(Qt::PointingHandCursor);
     menuButton_->setIconSize(QSize(28, 28));
-    menuButton_->setFixedSize(QSize(78, 58));
+    menuButton_->setFixedSize(QSize(78, 66));
     menuButton_->setPopupMode(QToolButton::InstantPopup);
     auto *menu = new QMenu(menuButton_);
     auto *newPrivateAction = menu->addAction(QStringLiteral("New private window"));
