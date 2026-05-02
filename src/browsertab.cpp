@@ -246,59 +246,119 @@ QString BrowserTab::homeHtml() const
   <title>Morphine</title>
   <style>
     :root {
-      color-scheme: dark;
       --accent: #8fb9ef;
       --accent-strong: #6f9fdf;
-      --accent-soft: #203452;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #07101f;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .theme-toggle {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .stage {
       --bg: #07101f;
       --surface: #101b2d;
       --surface-high: #17243a;
       --outline: #263850;
       --text: #eef5ff;
       --muted: #a8b7ce;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
+      --icon: #c8d7ec;
+      --wave: #1b5ba8;
+      --wave-soft: #214d88;
+      --grid: rgba(255, 255, 255, .03);
+      position: relative;
       min-height: 100vh;
-      margin: 0;
       overflow-x: hidden;
+      color: var(--text);
       background:
-        radial-gradient(circle at 14% 14%, #17355c 0, transparent 25rem),
-        radial-gradient(circle at 86% 18%, #132848 0, transparent 29rem),
-        radial-gradient(circle at 65% 96%, #12305d 0, transparent 34rem),
-        linear-gradient(135deg, #07101f 0%, #0b1728 48%, #101e32 100%);
+        radial-gradient(circle at 82% 12%, var(--wave-soft) 0, transparent 23rem),
+        linear-gradient(135deg, #07101f 0%, #0c1930 54%, #112445 100%);
+      transition: background .42s ease, color .42s ease;
     }
-    body::before,
-    body::after {
+    .theme-toggle:checked ~ .stage {
+      --bg: #f7f9ff;
+      --surface: #0f1b2d;
+      --surface-high: #13233a;
+      --outline: #d4e0f0;
+      --text: #edf6ff;
+      --muted: #8fa2bf;
+      --icon: #c8d7ec;
+      --wave: #d7e9ff;
+      --wave-soft: #eff6ff;
+      --grid: rgba(57, 83, 122, .08);
+      background:
+        radial-gradient(circle at 82% 12%, #e4f0ff 0, transparent 23rem),
+        linear-gradient(135deg, #fbfdff 0%, #f4f8ff 48%, #eef6ff 100%);
+    }
+    .theme-toggle:checked ~ .stage form {
+      background: #0f1b2d;
+      box-shadow:
+        0 18px 48px rgba(75, 106, 153, .16),
+        inset 0 1px 0 rgba(255, 255, 255, .1);
+    }
+    .theme-toggle:checked ~ .stage input::placeholder {
+      color: #aebbd0;
+    }
+    .theme-toggle:checked ~ .stage button {
+      color: #0b1a2e;
+    }
+    .theme-toggle:checked ~ .stage .shortcut {
+      color: #dde9fb;
+      box-shadow: 0 12px 26px rgba(75, 106, 153, .12);
+    }
+    .theme-toggle:checked ~ .stage .shortcut-icon {
+      color: #d8e8ff;
+    }
+    .stage::before,
+    .stage::after {
       position: fixed;
       content: "";
       pointer-events: none;
+      transition: background .42s ease, opacity .42s ease, border-color .42s ease;
     }
-    body::before {
-      inset: 0;
-      opacity: .22;
-      background:
-        linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
-      background-size: 72px 72px;
-      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    .stage::before {
+      width: min(670px, 62vw);
+      height: min(470px, 50vw);
+      left: -110px;
+      top: 18px;
+      border-radius: 38% 62% 58% 42% / 48% 40% 60% 52%;
+      background: var(--wave);
+      opacity: .24;
     }
-    body::after {
+    .theme-toggle:checked ~ .stage::before {
+      opacity: .86;
+    }
+    .stage::after {
       width: 720px;
       height: 720px;
       right: -210px;
       top: -210px;
-      border: 1px solid #17325c;
+      border: 1px solid var(--outline);
       border-radius: 50%;
+      opacity: .5;
     }
-    a {
-      color: inherit;
-      text-decoration: none;
+    .grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .8;
+      background:
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(0deg, var(--grid) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+      transition: background .42s ease;
     }
     .page {
       position: relative;
@@ -312,7 +372,7 @@ QString BrowserTab::homeHtml() const
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       margin-bottom: 52px;
     }
     .settings-chip {
@@ -323,6 +383,42 @@ QString BrowserTab::homeHtml() const
       color: var(--accent);
       font-size: 19px;
     }
+    .theme-label {
+      position: relative;
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      width: 72px;
+      height: 38px;
+      border: 1px solid var(--outline);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--icon);
+      cursor: pointer;
+      transition: background .42s ease, border-color .42s ease, color .42s ease;
+    }
+    .theme-label::before {
+      position: absolute;
+      content: "";
+      width: 30px;
+      height: 30px;
+      left: 4px;
+      top: 3px;
+      border-radius: 50%;
+      background: var(--accent);
+      transition: transform .32s ease, background .42s ease;
+    }
+    .theme-label span {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+    .theme-toggle:checked ~ .stage .theme-label::before {
+      transform: translateX(32px);
+      background: #244d85;
+    }
     .hero {
       display: grid;
       justify-items: center;
@@ -332,7 +428,8 @@ QString BrowserTab::homeHtml() const
       width: min(390px, 68vw);
       height: auto;
       margin-bottom: 14px;
-      filter: drop-shadow(0 20px 42px rgba(80, 129, 196, .22));
+      filter: drop-shadow(0 18px 36px rgba(80, 129, 196, .2));
+      transition: filter .42s ease;
     }
     .headline {
       max-width: 630px;
@@ -341,6 +438,7 @@ QString BrowserTab::homeHtml() const
       font-size: clamp(15px, 2vw, 18px);
       line-height: 1.6;
       letter-spacing: .01em;
+      transition: color .42s ease;
     }
     form {
       display: flex;
@@ -355,6 +453,7 @@ QString BrowserTab::homeHtml() const
       box-shadow:
         0 20px 70px rgba(0, 0, 0, .28),
         inset 0 1px 0 rgba(255, 255, 255, .08);
+      transition: background .42s ease, border-color .42s ease, box-shadow .42s ease;
     }
     .search-icon,
     .voice {
@@ -362,7 +461,8 @@ QString BrowserTab::homeHtml() const
       place-items: center;
       flex: 0 0 44px;
       height: 44px;
-      color: #c8d7ec;
+      color: var(--icon);
+      transition: color .42s ease;
     }
     .search-icon svg,
     .voice svg {
@@ -383,6 +483,7 @@ QString BrowserTab::homeHtml() const
       color: var(--text);
       font-size: 16px;
       outline: none;
+      transition: color .42s ease;
     }
     input::placeholder {
       color: #aebbd0;
@@ -401,41 +502,43 @@ QString BrowserTab::homeHtml() const
     }
     .shortcuts {
       display: grid;
-      grid-template-columns: repeat(6, minmax(86px, 1fr));
-      gap: 14px;
-      width: min(760px, 100%);
-      margin: 36px auto 0;
+      grid-template-columns: repeat(6, minmax(62px, 1fr));
+      gap: 10px;
+      width: min(550px, 100%);
+      margin: 28px auto 0;
     }
     .shortcut {
       display: grid;
       justify-content: center;
-      gap: 10px;
-      min-height: 82px;
-      padding: 11px 10px;
+      gap: 6px;
+      min-height: 58px;
+      padding: 8px 8px;
       border: 1px solid var(--outline);
-      border-radius: 24px;
+      border-radius: 18px;
       background: var(--surface-high);
       color: #dde9fb;
-      box-shadow: 0 16px 44px rgba(0, 0, 0, .16);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, .12);
+      transition: background .42s ease, border-color .42s ease, color .42s ease;
     }
     .shortcut:hover {
       border-color: #3b5b84;
-      background: #1c2c46;
+      background: var(--accent-soft);
     }
     .shortcut-icon {
       display: grid;
       place-items: center;
-      width: 42px;
-      height: 42px;
+      width: 28px;
+      height: 28px;
       margin: 0 auto;
-      border-radius: 16px;
+      border-radius: 12px;
       background: var(--accent-soft);
       color: #d8e8ff;
-      font-size: 21px;
+      font-size: 15px;
       font-weight: 800;
+      transition: background .42s ease, color .42s ease;
     }
     .shortcut span:last-child {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 650;
     }
     @media (max-width: 860px) {
@@ -468,35 +571,43 @@ QString BrowserTab::homeHtml() const
   </style>
 </head>
 <body>
-  <main class="page">
-    <nav class="topbar" aria-label="Morphine shortcuts">
-      <a class="settings-chip" href="morphine://settings" aria-label="Settings">⚙</a>
-    </nav>
+  <input class="theme-toggle" id="theme-toggle" type="checkbox" aria-label="Light theme">
+  <div class="stage">
+    <div class="grid" aria-hidden="true"></div>
+    <main class="page">
+      <nav class="topbar" aria-label="Morphine shortcuts">
+        <label class="theme-label" for="theme-toggle" title="Toggle light theme">
+          <span>☾</span>
+          <span>☼</span>
+        </label>
+        <a class="settings-chip" href="morphine://settings" aria-label="Settings">⚙</a>
+      </nav>
 
-    <section class="hero" aria-label="Search">
-      <img class="logo" src="qrc:/assets/morphine-logo.png" alt="Morphine">
-      <p class="headline">Fast Chromium shell with a calm Material You home surface.</p>
-    <form action="https://www.google.com/search">
-        <span class="search-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
-        </span>
-        <input name="q" autocomplete="off" placeholder="Search the web or type a URL">
-        <span class="voice" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V7a3 3 0 0 0-3-3Z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
-        </span>
-        <button>Search</button>
-    </form>
+      <section class="hero" aria-label="Search">
+        <img class="logo" src="qrc:/assets/morphine-logo.png" alt="Morphine">
+        <p class="headline">Fast Chromium shell with a calm Material You home surface.</p>
+        <form action="https://www.google.com/search">
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+          </span>
+          <input name="q" autocomplete="off" placeholder="Search the web or type a URL">
+          <span class="voice" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V7a3 3 0 0 0-3-3Z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
+          </span>
+          <button>Search</button>
+        </form>
 
-      <div class="shortcuts">
-        <a class="shortcut" href="https://www.google.com"><span class="shortcut-icon">G</span><span>Google</span></a>
-        <a class="shortcut" href="https://www.youtube.com"><span class="shortcut-icon">▶</span><span>YouTube</span></a>
-        <a class="shortcut" href="https://x.com"><span class="shortcut-icon">𝕏</span><span>X</span></a>
-        <a class="shortcut" href="https://github.com"><span class="shortcut-icon">⌘</span><span>GitHub</span></a>
-        <a class="shortcut" href="https://www.reddit.com"><span class="shortcut-icon">r</span><span>Reddit</span></a>
-        <a class="shortcut" href="https://www.wikipedia.org"><span class="shortcut-icon">W</span><span>Wikipedia</span></a>
-      </div>
-    </section>
-  </main>
+        <div class="shortcuts">
+          <a class="shortcut" href="https://www.google.com"><span class="shortcut-icon">G</span><span>Google</span></a>
+          <a class="shortcut" href="https://www.youtube.com"><span class="shortcut-icon">▶</span><span>YouTube</span></a>
+          <a class="shortcut" href="https://x.com"><span class="shortcut-icon">𝕏</span><span>X</span></a>
+          <a class="shortcut" href="https://github.com"><span class="shortcut-icon">⌘</span><span>GitHub</span></a>
+          <a class="shortcut" href="https://www.reddit.com"><span class="shortcut-icon">r</span><span>Reddit</span></a>
+          <a class="shortcut" href="https://www.wikipedia.org"><span class="shortcut-icon">W</span><span>Wikipedia</span></a>
+        </div>
+      </section>
+    </main>
+  </div>
 </body>
 </html>
 )HTML");
