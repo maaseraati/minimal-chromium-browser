@@ -247,97 +247,467 @@ QString BrowserTab::homeHtml() const
   <style>
     :root {
       color-scheme: dark;
+      --accent: #8fb9ef;
+      --accent-strong: #6f9fdf;
+      --accent-soft: rgba(143, 185, 239, .18);
+      --bg: #07101f;
+      --surface: rgba(25, 34, 52, .72);
+      --surface-high: rgba(37, 48, 70, .78);
+      --outline: rgba(196, 214, 244, .16);
+      --text: #eef5ff;
+      --muted: #a8b7ce;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0a0b10;
-      color: #f6f7fb;
+      background: var(--bg);
+      color: var(--text);
+    }
+    * {
+      box-sizing: border-box;
     }
     body {
       min-height: 100vh;
       margin: 0;
-      display: grid;
-      place-items: center;
+      overflow-x: hidden;
       background:
-        radial-gradient(circle at top left, rgba(125, 91, 255, .35), transparent 34rem),
-        radial-gradient(circle at bottom right, rgba(0, 209, 255, .24), transparent 30rem),
-        #0a0b10;
+        radial-gradient(circle at 13% 12%, rgba(143, 185, 239, .36), transparent 24rem),
+        radial-gradient(circle at 88% 18%, rgba(74, 108, 171, .28), transparent 28rem),
+        radial-gradient(circle at 65% 98%, rgba(32, 66, 125, .42), transparent 34rem),
+        linear-gradient(135deg, #07101f 0%, #0b1728 48%, #101e32 100%);
     }
-    main {
-      width: min(820px, calc(100vw - 40px));
-      padding: 46px;
-      border: 1px solid rgba(255, 255, 255, .12);
-      border-radius: 34px;
-      background: rgba(16, 18, 28, .76);
-      box-shadow: 0 24px 90px rgba(0, 0, 0, .44);
-      backdrop-filter: blur(24px);
+    body::before,
+    body::after {
+      position: fixed;
+      content: "";
+      pointer-events: none;
+    }
+    body::before {
+      inset: 0;
+      opacity: .4;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+    body::after {
+      width: 720px;
+      height: 720px;
+      right: -210px;
+      top: -210px;
+      border: 1px solid rgba(143, 185, 239, .18);
+      border-radius: 50%;
+      box-shadow: inset 0 0 80px rgba(143, 185, 239, .08);
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100vw - 48px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 30px 0;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .brand-chip,
+    .settings-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--outline);
+      border-radius: 999px;
+      background: rgba(16, 25, 42, .62);
+      color: #d8e7ff;
+      box-shadow: 0 14px 44px rgba(0, 0, 0, .16);
+      backdrop-filter: blur(20px);
+    }
+    .brand-mark {
+      width: 28px;
+      height: 20px;
+      border-radius: 10px;
+      background:
+        radial-gradient(circle at 72% 28%, #bcd8ff 0 28%, transparent 29%),
+        linear-gradient(135deg, #cfe2ff, var(--accent-strong));
+      box-shadow: inset 0 -8px 16px rgba(32, 82, 155, .3);
+    }
+    .settings-chip {
+      width: 42px;
+      justify-content: center;
+      padding: 0;
+      color: var(--accent);
+      font-size: 19px;
+    }
+    .hero {
+      display: grid;
+      justify-items: center;
       text-align: center;
     }
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(48px, 9vw, 92px);
-      letter-spacing: -0.08em;
+    .logo {
+      width: min(390px, 68vw);
+      height: auto;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 20px 42px rgba(80, 129, 196, .22));
     }
-    p {
-      margin: 0 0 34px;
-      color: #aeb5cc;
-      font-size: 18px;
+    .headline {
+      max-width: 630px;
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: clamp(15px, 2vw, 18px);
+      line-height: 1.6;
+      letter-spacing: .01em;
     }
     form {
       display: flex;
+      align-items: center;
       gap: 12px;
+      width: min(700px, 100%);
+      min-height: 58px;
+      padding: 8px;
+      border: 1px solid rgba(210, 226, 255, .18);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(38, 49, 71, .82), rgba(24, 33, 51, .74));
+      box-shadow:
+        0 20px 70px rgba(0, 0, 0, .28),
+        inset 0 1px 0 rgba(255, 255, 255, .08);
+      backdrop-filter: blur(26px);
+    }
+    .search-icon,
+    .voice {
+      display: grid;
+      place-items: center;
+      flex: 0 0 44px;
+      height: 44px;
+      color: #c8d7ec;
+    }
+    .search-icon svg,
+    .voice svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     input {
       flex: 1;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 18px;
-      padding: 18px 20px;
-      background: rgba(255,255,255,.08);
-      color: #fff;
-      font-size: 17px;
+      min-width: 0;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
       outline: none;
     }
-    input:focus {
-      border-color: rgba(139, 118, 255, .9);
-      box-shadow: 0 0 0 4px rgba(139, 118, 255, .18);
+    input::placeholder {
+      color: #aebbd0;
     }
     button {
       border: 0;
-      border-radius: 18px;
-      padding: 0 24px;
-      background: linear-gradient(135deg, #8b76ff, #00d1ff);
-      color: white;
-      font-size: 16px;
+      border-radius: 22px;
+      min-height: 48px;
+      padding: 0 22px;
+      background: linear-gradient(135deg, #d5e6ff, var(--accent) 52%, #6f9fdf);
+      color: #071427;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 12px 30px rgba(111, 159, 223, .24);
     }
-    .quick {
-      display: flex;
+    .shortcuts {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(86px, 1fr));
+      gap: 14px;
+      width: min(760px, 100%);
+      margin: 34px auto 0;
+    }
+    .shortcut {
+      display: grid;
       justify-content: center;
-      flex-wrap: wrap;
       gap: 10px;
-      margin-top: 24px;
+      min-height: 82px;
+      padding: 11px 10px;
+      border: 1px solid rgba(209, 225, 255, .12);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(41, 54, 77, .72), rgba(25, 34, 52, .7));
+      color: #dde9fb;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, .16);
+      backdrop-filter: blur(18px);
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
     }
-    .quick a {
-      color: #d8dcff;
-      text-decoration: none;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.08);
+    .shortcut:hover {
+      transform: translateY(-3px);
+      border-color: rgba(143, 185, 239, .34);
+      background: linear-gradient(180deg, rgba(61, 78, 108, .78), rgba(29, 41, 63, .76));
+    }
+    .shortcut-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      margin: 0 auto;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: #d8e8ff;
+      font-size: 21px;
+      font-weight: 800;
+    }
+    .shortcut span:last-child {
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: .95fr 1.35fr;
+      gap: 16px;
+      margin-top: 30px;
+    }
+    .panel {
+      border: 1px solid rgba(209, 225, 255, .14);
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(25, 35, 55, .74), rgba(14, 23, 38, .74));
+      box-shadow:
+        0 22px 80px rgba(0, 0, 0, .22),
+        inset 0 1px 0 rgba(255, 255, 255, .06);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 22px 10px;
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: .01em;
+    }
+    .panel-action {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .recent-list,
+    .discover-list {
+      display: grid;
+      gap: 8px;
+      padding: 10px 16px 16px;
+    }
+    .recent-item,
+    .discover-row {
+      display: grid;
+      align-items: center;
+      gap: 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .035);
+    }
+    .recent-item {
+      grid-template-columns: 44px 1fr auto;
+      padding: 10px;
+    }
+    .favicon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 15px;
+      background: rgba(143, 185, 239, .16);
+      color: #d7e8ff;
+      font-weight: 800;
+    }
+    .item-title,
+    .discover-title {
+      color: #eef5ff;
+      font-size: 14px;
+      font-weight: 680;
+    }
+    .item-meta,
+    .discover-meta {
+      margin-top: 3px;
+      color: #8fa1bb;
+      font-size: 12px;
+    }
+    .item-time {
+      color: #8294ae;
+      font-size: 12px;
+    }
+    .feature-card {
+      display: grid;
+      gap: 16px;
+      padding: 0 16px 16px;
+    }
+    .feature-art {
+      min-height: 136px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 52% 35%, rgba(225, 238, 255, .9), transparent 0 46px),
+        radial-gradient(circle at 39% 43%, rgba(143, 185, 239, .9), transparent 0 76px),
+        radial-gradient(circle at 64% 64%, rgba(51, 101, 183, .96), transparent 0 94px),
+        linear-gradient(135deg, #0d3f99, #8ebcff);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14);
+    }
+    .discover-copy {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+    .discover-copy h3 {
+      margin: 0;
+      font-size: clamp(19px, 3vw, 25px);
+      letter-spacing: -.03em;
+    }
+    .discover-copy p {
+      max-width: 520px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .discover-list {
+      grid-template-columns: repeat(3, 1fr);
+      padding-top: 0;
+    }
+    .discover-row {
+      padding: 13px;
+    }
+    @media (max-width: 860px) {
+      .page {
+        width: min(680px, calc(100vw - 32px));
+        padding: 28px 0;
+      }
+      .topbar {
+        margin-bottom: 34px;
+      }
+      form {
+        border-radius: 24px;
+      }
+      button {
+        display: none;
+      }
+      .shortcuts {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .content-grid,
+      .discover-copy,
+      .discover-list {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 520px) {
+      .brand-chip {
+        font-size: 13px;
+      }
+      .search-icon,
+      .voice {
+        flex-basis: 36px;
+      }
+      .shortcuts {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1>morphine</h1>
-    <p>Fast C++ shell around Chromium via Qt WebEngine.</p>
+  <main class="page">
+    <nav class="topbar" aria-label="Morphine shortcuts">
+      <a class="brand-chip" href="morphine://home" aria-label="Morphine home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Morphine</span>
+      </a>
+      <a class="settings-chip" href="morphine://settings" aria-label="Settings">⚙</a>
+    </nav>
+
+    <section class="hero" aria-label="Search">
+      <img class="logo" src="qrc:/assets/morphine-logo.png" alt="Morphine">
+      <p class="headline">Fast Chromium shell with a calm Material You home surface.</p>
     <form action="https://www.google.com/search">
-      <input name="q" autofocus autocomplete="off" placeholder="Search Google or type a URL">
-      <button>Search</button>
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
+        </span>
+        <input name="q" autocomplete="off" placeholder="Search the web or type a URL">
+        <span class="voice" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V7a3 3 0 0 0-3-3Z"></path><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>
+        </span>
+        <button>Search</button>
     </form>
-    <div class="quick">
-      <a href="https://github.com">GitHub</a>
-      <a href="https://news.ycombinator.com">Hacker News</a>
-      <a href="https://www.qt.io/product/qt6">Qt 6</a>
-    </div>
+
+      <div class="shortcuts">
+        <a class="shortcut" href="https://www.google.com"><span class="shortcut-icon">G</span><span>Google</span></a>
+        <a class="shortcut" href="https://www.youtube.com"><span class="shortcut-icon">▶</span><span>YouTube</span></a>
+        <a class="shortcut" href="https://x.com"><span class="shortcut-icon">𝕏</span><span>X</span></a>
+        <a class="shortcut" href="https://github.com"><span class="shortcut-icon">⌘</span><span>GitHub</span></a>
+        <a class="shortcut" href="https://www.reddit.com"><span class="shortcut-icon">r</span><span>Reddit</span></a>
+        <a class="shortcut" href="https://www.wikipedia.org"><span class="shortcut-icon">W</span><span>Wikipedia</span></a>
+      </div>
+    </section>
+
+    <section class="content-grid" aria-label="Home content">
+      <article class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Continue where you left off</h2>
+          <a class="panel-action" href="https://www.google.com/search?q=material+design+3">Explore</a>
+        </div>
+        <div class="recent-list">
+          <a class="recent-item" href="https://m3.material.io">
+            <span class="favicon">M3</span>
+            <span><span class="item-title">Material Design 3</span><span class="item-meta">m3.material.io</span></span>
+            <span class="item-time">2h</span>
+          </a>
+          <a class="recent-item" href="https://developer.chrome.com">
+            <span class="favicon">C</span>
+            <span><span class="item-title">Chrome for Developers</span><span class="item-meta">developer.chrome.com</span></span>
+            <span class="item-time">1d</span>
+          </a>
+          <a class="recent-item" href="https://doc.qt.io/qt-6/qtwebengine-index.html">
+            <span class="favicon">Qt</span>
+            <span><span class="item-title">Qt WebEngine</span><span class="item-meta">doc.qt.io</span></span>
+            <span class="item-time">3d</span>
+          </a>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Discover</h2>
+          <a class="panel-action" href="https://m3.material.io">Show more</a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-art" aria-hidden="true"></div>
+          <div class="discover-copy">
+            <div>
+              <h3>Material You for Morphine</h3>
+              <p>Soft surfaces, deep blue glass layers, and rounded controls tuned for a compact browser start page.</p>
+            </div>
+            <a class="panel-action" href="https://m3.material.io">Read</a>
+          </div>
+        </div>
+        <div class="discover-list">
+          <a class="discover-row" href="https://m3.material.io/styles/color/overview">
+            <span class="discover-title">Designing with color</span>
+            <span class="discover-meta">m3.material.io</span>
+          </a>
+          <a class="discover-row" href="https://developer.android.com/design/ui/mobile/guides/styles/color">
+            <span class="discover-title">Build better with Material</span>
+            <span class="discover-meta">developer.android.com</span>
+          </a>
+          <a class="discover-row" href="https://web.dev/learn/design">
+            <span class="discover-title">Responsive UI basics</span>
+            <span class="discover-meta">web.dev</span>
+          </a>
+        </div>
+      </article>
+    </section>
   </main>
 </body>
 </html>
