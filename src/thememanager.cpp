@@ -9,10 +9,10 @@ ThemeManager *ThemeManager::instance()
 }
 
 ThemeManager::ThemeManager(QObject *parent)
-    : QObject(parent), light_(false)
+    : QObject(parent), light_(true)
 {
     QSettings settings(QStringLiteral("Morphine"), QStringLiteral("Morphine"));
-    light_ = settings.value(QStringLiteral("theme/light"), false).toBool();
+    light_ = settings.value(QStringLiteral("theme/light"), true).toBool();
 }
 
 void ThemeManager::setLight(bool light)
