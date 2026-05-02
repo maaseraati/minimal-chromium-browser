@@ -246,16 +246,16 @@ QString BrowserTab::homeHtml() const
   <title>Morphine</title>
   <style>
     :root {
-      --accent: #8fb9ef;
-      --accent-strong: #6f9fdf;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     * {
       box-sizing: border-box;
     }
+    html,
     body {
       margin: 0;
-      background: #07101f;
+      background: #10131a;
+      color: #e3e2e7;
     }
     a {
       color: inherit;
@@ -267,98 +267,113 @@ QString BrowserTab::homeHtml() const
       pointer-events: none;
     }
     .stage {
-      --bg: #07101f;
-      --surface: #101b2d;
-      --surface-high: #17243a;
-      --outline: #263850;
-      --text: #eef5ff;
-      --muted: #a8b7ce;
-      --icon: #c8d7ec;
-      --wave: #1b5ba8;
-      --wave-soft: #214d88;
-      --grid: rgba(255, 255, 255, .03);
+      --primary: #aac5ff;
+      --on-primary: #00306e;
+      --primary-container: #284777;
+      --on-primary-container: #d8e2ff;
+      --surface: #10131a;
+      --surface-container: #1b1e25;
+      --surface-container-high: #262932;
+      --on-surface: #e3e2e7;
+      --on-surface-variant: #c4c6cf;
+      --outline-variant: #43474e;
+      --wave-from: rgba(170, 197, 255, .22);
+      --wave-mid: rgba(170, 197, 255, .08);
+      --wave-to: rgba(170, 197, 255, 0);
+      --star-color: rgba(170, 197, 255, .55);
+      --shadow: 0 24px 60px rgba(0, 0, 0, .35);
+
       position: relative;
       min-height: 100vh;
-      overflow-x: hidden;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 82% 12%, var(--wave-soft) 0, transparent 23rem),
-        linear-gradient(135deg, #07101f 0%, #0c1930 54%, #112445 100%);
-      transition: background .42s ease, color .42s ease;
+      overflow: hidden;
+      background: var(--surface);
+      color: var(--on-surface);
+      transition: background .4s ease, color .4s ease;
     }
     .theme-toggle:checked ~ .stage {
-      --bg: #f7f9ff;
-      --surface: #0f1b2d;
-      --surface-high: #13233a;
-      --outline: #d4e0f0;
-      --text: #edf6ff;
-      --muted: #8fa2bf;
-      --icon: #c8d7ec;
-      --wave: #d7e9ff;
-      --wave-soft: #eff6ff;
-      --grid: rgba(57, 83, 122, .08);
-      background:
-        radial-gradient(circle at 82% 12%, #e4f0ff 0, transparent 23rem),
-        linear-gradient(135deg, #fbfdff 0%, #f4f8ff 48%, #eef6ff 100%);
+      --primary: #4a76b3;
+      --on-primary: #ffffff;
+      --primary-container: #d8e2ff;
+      --on-primary-container: #001a41;
+      --surface: #fafbff;
+      --surface-container: #eef0f7;
+      --surface-container-high: #e2e6ee;
+      --on-surface: #1a1c1f;
+      --on-surface-variant: #44474e;
+      --outline-variant: #c4c6cf;
+      --wave-from: rgba(74, 118, 179, .18);
+      --wave-mid: rgba(74, 118, 179, .06);
+      --wave-to: rgba(74, 118, 179, 0);
+      --star-color: rgba(74, 118, 179, .42);
+      --shadow: 0 18px 48px rgba(74, 118, 179, .14);
     }
-    .theme-toggle:checked ~ .stage form {
-      background: #0f1b2d;
-      box-shadow:
-        0 18px 48px rgba(75, 106, 153, .16),
-        inset 0 1px 0 rgba(255, 255, 255, .1);
-    }
-    .theme-toggle:checked ~ .stage input::placeholder {
-      color: #aebbd0;
-    }
-    .theme-toggle:checked ~ .stage button {
-      color: #0b1a2e;
-    }
-    .theme-toggle:checked ~ .stage .shortcut {
-      color: #dde9fb;
-      box-shadow: 0 12px 26px rgba(75, 106, 153, .12);
-    }
-    .theme-toggle:checked ~ .stage .shortcut-icon {
-      color: #d8e8ff;
-    }
-    .stage::before,
-    .stage::after {
+    .wave {
       position: fixed;
-      content: "";
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 58vh;
       pointer-events: none;
-      transition: background .42s ease, opacity .42s ease, border-color .42s ease;
+      z-index: 0;
+      background: linear-gradient(to top,
+        var(--wave-from) 0%,
+        var(--wave-mid) 42%,
+        var(--wave-to) 100%);
+      -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 600" preserveAspectRatio="none"><path d="M0,470 C220,360 460,540 720,440 C980,340 1200,520 1440,420 L1440,600 L0,600 Z" fill="black"/></svg>');
+      -webkit-mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;
+      mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 600" preserveAspectRatio="none"><path d="M0,470 C220,360 460,540 720,440 C980,340 1200,520 1440,420 L1440,600 L0,600 Z" fill="black"/></svg>');
+      mask-size: 100% 100%;
+      mask-repeat: no-repeat;
+      transition: background .4s ease;
     }
-    .stage::before {
-      width: min(670px, 62vw);
-      height: min(470px, 50vw);
-      left: -110px;
-      top: 18px;
-      border-radius: 38% 62% 58% 42% / 48% 40% 60% 52%;
-      background: var(--wave);
-      opacity: .24;
-    }
-    .theme-toggle:checked ~ .stage::before {
-      opacity: .86;
-    }
-    .stage::after {
-      width: 720px;
-      height: 720px;
-      right: -210px;
-      top: -210px;
-      border: 1px solid var(--outline);
-      border-radius: 50%;
-      opacity: .5;
-    }
-    .grid {
+    .star {
       position: fixed;
-      inset: 0;
       pointer-events: none;
-      opacity: .8;
-      background:
-        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
-        linear-gradient(0deg, var(--grid) 1px, transparent 1px);
-      background-size: 72px 72px;
-      mask-image: linear-gradient(to bottom, black, transparent 78%);
-      transition: background .42s ease;
+      z-index: 0;
+      color: var(--star-color);
+      transition: color .4s ease;
+      animation: twinkle 7s ease-in-out infinite;
+    }
+    .star svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      fill: currentColor;
+    }
+    .star.s1 {
+      width: 96px;
+      height: 96px;
+      right: 8vw;
+      top: 13vh;
+    }
+    .star.s2 {
+      width: 56px;
+      height: 56px;
+      right: 22vw;
+      top: 30vh;
+      animation-duration: 8.5s;
+      animation-delay: -1.6s;
+    }
+    .star.s3 {
+      width: 38px;
+      height: 38px;
+      left: 11vw;
+      top: 26vh;
+      animation-duration: 6.4s;
+      animation-delay: -3s;
+    }
+    .star.s4 {
+      width: 28px;
+      height: 28px;
+      left: 28vw;
+      top: 12vh;
+      animation-duration: 5.4s;
+      animation-delay: -2.2s;
+    }
+    @keyframes twinkle {
+      0%, 100% { transform: rotate(0) scale(1); opacity: .85; }
+      50%      { transform: rotate(35deg) scale(1.06); opacity: 1; }
     }
     .page {
       position: relative;
@@ -380,8 +395,9 @@ QString BrowserTab::homeHtml() const
       place-items: center;
       width: 40px;
       height: 40px;
-      color: var(--accent);
+      color: var(--primary);
       font-size: 19px;
+      transition: color .4s ease;
     }
     .theme-label {
       position: relative;
@@ -390,12 +406,12 @@ QString BrowserTab::homeHtml() const
       align-items: center;
       width: 72px;
       height: 38px;
-      border: 1px solid var(--outline);
+      border: 1px solid var(--outline-variant);
       border-radius: 999px;
-      background: var(--surface);
-      color: var(--icon);
+      background: var(--surface-container);
+      color: var(--on-surface-variant);
       cursor: pointer;
-      transition: background .42s ease, border-color .42s ease, color .42s ease;
+      transition: background .4s ease, border-color .4s ease, color .4s ease;
     }
     .theme-label::before {
       position: absolute;
@@ -405,8 +421,8 @@ QString BrowserTab::homeHtml() const
       left: 4px;
       top: 3px;
       border-radius: 50%;
-      background: var(--accent);
-      transition: transform .32s ease, background .42s ease;
+      background: var(--primary);
+      transition: transform .32s ease, background .4s ease;
     }
     .theme-label span {
       position: relative;
@@ -417,7 +433,6 @@ QString BrowserTab::homeHtml() const
     }
     .theme-toggle:checked ~ .stage .theme-label::before {
       transform: translateX(32px);
-      background: #244d85;
     }
     .hero {
       display: grid;
@@ -429,40 +444,39 @@ QString BrowserTab::homeHtml() const
       height: auto;
       margin-bottom: 14px;
       filter: drop-shadow(0 18px 36px rgba(80, 129, 196, .2));
-      transition: filter .42s ease;
+      transition: filter .4s ease;
     }
     .headline {
       max-width: 630px;
-      margin: 0 0 20px;
-      color: var(--muted);
+      margin: 0 0 22px;
+      color: var(--on-surface-variant);
       font-size: clamp(15px, 2vw, 18px);
       line-height: 1.6;
       letter-spacing: .01em;
-      transition: color .42s ease;
+      transition: color .4s ease;
     }
     form {
       display: flex;
       align-items: center;
       gap: 12px;
       width: min(700px, 100%);
-      min-height: 58px;
-      padding: 8px;
-      border: 1px solid var(--outline);
-      border-radius: 28px;
-      background: var(--surface);
-      box-shadow:
-        0 20px 70px rgba(0, 0, 0, .28),
-        inset 0 1px 0 rgba(255, 255, 255, .08);
-      transition: background .42s ease, border-color .42s ease, box-shadow .42s ease;
+      min-height: 60px;
+      padding: 6px 6px 6px 18px;
+      border: 1px solid var(--outline-variant);
+      border-radius: 32px;
+      background: var(--surface-container);
+      color: var(--on-surface);
+      box-shadow: var(--shadow);
+      transition: background .4s ease, border-color .4s ease, color .4s ease, box-shadow .4s ease;
     }
     .search-icon,
     .voice {
       display: grid;
       place-items: center;
-      flex: 0 0 44px;
-      height: 44px;
-      color: var(--icon);
-      transition: color .42s ease;
+      flex: 0 0 40px;
+      height: 40px;
+      color: var(--on-surface-variant);
+      transition: color .4s ease;
     }
     .search-icon svg,
     .voice svg {
@@ -480,25 +494,27 @@ QString BrowserTab::homeHtml() const
       border: 0;
       padding: 0;
       background: transparent;
-      color: var(--text);
+      color: var(--on-surface);
       font-size: 16px;
       outline: none;
-      transition: color .42s ease;
+      transition: color .4s ease;
     }
     input::placeholder {
-      color: #aebbd0;
+      color: var(--on-surface-variant);
+      transition: color .4s ease;
     }
     button {
       border: 0;
-      border-radius: 22px;
+      border-radius: 24px;
       min-height: 48px;
       padding: 0 22px;
-      background: linear-gradient(135deg, #d5e6ff, var(--accent) 52%, #6f9fdf);
-      color: #071427;
+      background: var(--primary);
+      color: var(--on-primary);
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 600;
+      letter-spacing: .01em;
       cursor: pointer;
-      box-shadow: 0 12px 30px rgba(111, 159, 223, .24);
+      transition: background .4s ease, color .4s ease;
     }
     .shortcuts {
       display: grid;
@@ -509,37 +525,38 @@ QString BrowserTab::homeHtml() const
     }
     .shortcut {
       display: grid;
-      justify-content: center;
+      justify-items: center;
       gap: 6px;
-      min-height: 58px;
-      padding: 8px 8px;
-      border: 1px solid var(--outline);
-      border-radius: 18px;
-      background: var(--surface-high);
-      color: #dde9fb;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, .12);
-      transition: background .42s ease, border-color .42s ease, color .42s ease;
+      min-height: 70px;
+      padding: 12px 8px;
+      border: 1px solid var(--outline-variant);
+      border-radius: 22px;
+      background: var(--surface-container-high);
+      color: var(--on-surface);
+      transition: background .4s ease, border-color .4s ease, color .4s ease;
     }
     .shortcut:hover {
-      border-color: #3b5b84;
-      background: var(--accent-soft);
+      border-color: var(--primary-container);
+      background: var(--primary-container);
+      color: var(--on-primary-container);
     }
     .shortcut-icon {
       display: grid;
       place-items: center;
-      width: 28px;
-      height: 28px;
-      margin: 0 auto;
-      border-radius: 12px;
-      background: var(--accent-soft);
-      color: #d8e8ff;
-      font-size: 15px;
-      font-weight: 800;
-      transition: background .42s ease, color .42s ease;
+      width: 32px;
+      height: 32px;
+      border-radius: 14px;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-size: 16px;
+      font-weight: 700;
+      transition: background .4s ease, color .4s ease;
     }
     .shortcut span:last-child {
-      font-size: 11px;
-      font-weight: 650;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--on-surface-variant);
+      transition: color .4s ease;
     }
     @media (max-width: 860px) {
       .page {
@@ -550,7 +567,7 @@ QString BrowserTab::homeHtml() const
         margin-bottom: 34px;
       }
       form {
-        border-radius: 24px;
+        border-radius: 26px;
       }
       button {
         display: none;
@@ -573,7 +590,11 @@ QString BrowserTab::homeHtml() const
 <body>
   <input class="theme-toggle" id="theme-toggle" type="checkbox" aria-label="Light theme">
   <div class="stage">
-    <div class="grid" aria-hidden="true"></div>
+    <div class="wave" aria-hidden="true"></div>
+    <span class="star s1" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
+    <span class="star s2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
+    <span class="star s3" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
+    <span class="star s4" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
     <main class="page">
       <nav class="topbar" aria-label="Morphine shortcuts">
         <label class="theme-label" for="theme-toggle" title="Toggle light theme">
