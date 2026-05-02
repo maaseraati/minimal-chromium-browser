@@ -688,13 +688,13 @@ void BrowserTab::updateActions()
 
 void BrowserTab::refreshIcons()
 {
-    // Green prototype palette — the toolbar nav buttons sit on a cream
-    // gradient (`#f7f9f1`→`#f3f5ec`) so the glyph follows the muted text
-    // colour from the spec (`#59604f`). The reload chip uses the deeper
-    // ink so it reads against its `#bed09a` background.
-    const QColor navGlyph(QStringLiteral("#59604f"));
-    const QColor reloadGlyph(QStringLiteral("#172011"));
-    const QColor lockGlyph(QStringLiteral("#697061"));
+    // M3 light: nav buttons sit on the surface (`#fafbff`) so the glyph
+    // matches `--on-surface-variant` (`#44474e`). The reload chip uses
+    // the deeper `--on-primary-container` ink (`#001a41`) to read against
+    // its primary-container background, and the lock follows the variant.
+    const QColor navGlyph(QStringLiteral("#44474e"));
+    const QColor reloadGlyph(QStringLiteral("#001a41"));
+    const QColor lockGlyph(QStringLiteral("#44474e"));
     backButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-back.svg"), navGlyph));
     forwardButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-forward.svg"), navGlyph));
     reloadButton_->setIcon(IconUtils::coloredSvg(
@@ -708,7 +708,7 @@ void BrowserTab::refreshIcons()
 
 void BrowserTab::updatePrimaryActionIcon()
 {
-    const QColor profileGlyph(QStringLiteral("#2e3b1b"));
+    const QColor profileGlyph(QStringLiteral("#001a41"));
     primaryAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/profile.svg"), profileGlyph, 24));
 }
 

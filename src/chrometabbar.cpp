@@ -13,25 +13,32 @@
 #include <QPropertyAnimation>
 #include <QStyle>
 #include <QStyleOptionTab>
-#include <QTimer>
 #include <QtMath>
 
 namespace {
 
-// HTML prototype palette ---------------------------------------------------
-constexpr const char *kStripTopColor      = "#fbfcf4";
-constexpr const char *kStripBottomColor   = "#f6f8ef";
-constexpr const char *kStripBorderColor   = "#dfe4d6";
-constexpr const char *kTabBackground      = "#fafbf4"; // rgba(250,251,244,.92)
-constexpr const char *kTabHoverBackground = "#edf1e2"; // rgba(237,241,226,.86)
-constexpr const char *kTabBorder          = "#e1e5d8";
-constexpr const char *kTabHoverBorder     = "#d9dece";
-constexpr const char *kTabText            = "#555b4f";
-constexpr const char *kTabHoverText       = "#262b21";
-constexpr const char *kPillBase           = "#d9e5c9";
-constexpr const char *kPillBorder         = "#627748";
-constexpr const char *kActiveText         = "#1e211b";
-constexpr const char *kCloseIconColor     = "#1f241d";
+// Material 3 light palette mirrored from morphine://home (the in-app start
+// page) so the chrome reads as part of the same surface as the home page.
+//   --primary:               #4a76b3
+//   --on-primary:            #ffffff
+//   --primary-container:     #d8e2ff   (active-pill fill)
+//   --on-primary-container:  #001a41
+//   --surface:               #fafbff
+//   --surface-container:     #eef0f7
+//   --surface-container-high:#e2e6ee
+//   --on-surface:            #1a1c1f
+//   --on-surface-variant:    #44474e
+//   --outline-variant:       #c4c6cf
+constexpr const char *kStripBorderColor   = "#e2e6ee";
+constexpr const char *kTabHoverBackground = "#eef0f7";
+constexpr const char *kTabBorder          = "#dfe2ea";
+constexpr const char *kTabHoverBorder     = "#c4c6cf";
+constexpr const char *kTabText            = "#44474e";
+constexpr const char *kTabHoverText       = "#1a1c1f";
+constexpr const char *kPillBase           = "#d8e2ff";
+constexpr const char *kPillBorder         = "#4a76b3";
+constexpr const char *kActiveText         = "#001a41";
+constexpr const char *kCloseIconColor     = "#1a1c1f";
 
 // Tab sizing -----------------------------------------------------------------
 constexpr int kTabHeight    = 44;
@@ -39,12 +46,15 @@ constexpr int kTabPillRadius = 15;
 constexpr int kBarHeight    = 58;
 constexpr int kPreferredTabWidth = 310;
 constexpr int kMinTabWidth  = 130;
-constexpr int kTabSpacing   = 14;
-constexpr int kPillTopMargin = (kBarHeight - kTabHeight) / 2; // 7px
 constexpr int kFaviconSize  = 22;
 constexpr int kCloseSize    = 24;
 constexpr int kPaddingLeft  = 18;
 constexpr int kPaddingRight = 12;
+
+// Animation durations (matches HTML prototype's transition timings).
+constexpr int kPillAnimDuration   = 240;
+constexpr int kAppearDuration     = 220;
+constexpr int kCloseDuration      = 180;
 
 QPainterPath roundedPath(const QRectF &rect, qreal radius)
 {
@@ -71,14 +81,11 @@ ChromeTabBar::ChromeTabBar(QWidget *parent)
     setMinimumHeight(kBarHeight);
 
     pillAnim_ = new QPropertyAnimation(this, "pillGeometry", this);
-    pillAnim_->setDuration(260);
+    pillAnim_->setDuration(kPillAnimDuration);
     pillAnim_->setEasingCurve(QEasingCurve::OutCubic);
 
     connect(this, &QTabBar::currentChanged, this, &ChromeTabBar::onCurrentChanged);
-    connect(this, &QTabBar::tabMoved, this, [this](int, int) {
-        snapPillToCurrent();
-        update();
-    });
+    connect(this, &QTabBar::tabMoved, this, &ChromeTabBar::onTabMoved);
 }
 
 void ChromeTabBar::setPillGeometry(const QRectF &geometry)
@@ -107,7 +114,7 @@ QSize ChromeTabBar::tabSizeHint(int /*index*/) const
 {
     const int barWidth = std::max(width(), 1);
     const int n = std::max(count(), 1);
-    int candidate = (barWidth - kTabSpacing * (n - 1)) / n;
+    int candidate = barWidth / n;
     candidate = std::clamp(candidate, kMinTabWidth, kPreferredTabWidth);
     return QSize(candidate, kTabHeight);
 }
@@ -120,21 +127,37 @@ QSize ChromeTabBar::minimumTabSizeHint(int /*index*/) const
 void ChromeTabBar::tabInserted(int index)
 {
     QTabBar::tabInserted(index);
-    if (firstLayout_) {
-        snapPillToCurrent();
+    const quint64 id = nextTabId_++;
+    if (index >= 0 && index <= tabIds_.size()) {
+        tabIds_.insert(index, id);
     } else {
-        // Defer: tab geometry not finalised yet inside this callback.
-        QTimer::singleShot(0, this, [this] {
-            if (currentIndex() >= 0) {
-                animatePillTo(pillRectForIndex(currentIndex()));
-            }
-        });
+        tabIds_.append(id);
+    }
+    appearProgress_[id] = 0.0;
+    if (firstLayout_) {
+        // Don't animate the very first tab — feels janky on app start.
+        appearProgress_[id] = 1.0;
+    } else {
+        startAppearAnim(id);
     }
 }
 
 void ChromeTabBar::tabRemoved(int index)
 {
     QTabBar::tabRemoved(index);
+    if (index >= 0 && index < tabIds_.size()) {
+        const quint64 id = tabIds_.takeAt(index);
+        if (auto *a = appearAnims_.take(id)) {
+            a->stop();
+            a->deleteLater();
+        }
+        if (auto *a = closeAnims_.take(id)) {
+            a->stop();
+            a->deleteLater();
+        }
+        appearProgress_.remove(id);
+        closeProgress_.remove(id);
+    }
     if (hoverTabIndex_ == index) {
         hoverTabIndex_ = -1;
     } else if (hoverTabIndex_ > index) {
@@ -145,14 +168,6 @@ void ChromeTabBar::tabRemoved(int index)
     } else if (hoverCloseIndex_ > index) {
         --hoverCloseIndex_;
     }
-    QTimer::singleShot(0, this, [this] {
-        if (currentIndex() >= 0) {
-            animatePillTo(pillRectForIndex(currentIndex()));
-        } else {
-            pillGeometry_ = QRectF();
-            update();
-        }
-    });
 }
 
 void ChromeTabBar::tabLayoutChange()
@@ -161,17 +176,25 @@ void ChromeTabBar::tabLayoutChange()
     if (firstLayout_) {
         firstLayout_ = false;
         snapPillToCurrent();
-    } else if (pillAnim_->state() != QAbstractAnimation::Running && currentIndex() >= 0) {
-        // Layout (resize / scroll) moved tabs; keep pill aligned without animation.
-        pillGeometry_ = pillRectForIndex(currentIndex());
-        update();
+        return;
+    }
+    if (currentIndex() >= 0) {
+        const QRectF target = pillRectForIndex(currentIndex());
+        if (target != pillGeometry_) {
+            animatePillTo(target);
+        }
     }
 }
 
 void ChromeTabBar::resizeEvent(QResizeEvent *event)
 {
     QTabBar::resizeEvent(event);
+    // On window resize tab geometry shifts in lockstep with the pill, so just
+    // re-anchor without animating to avoid a visible drag.
     if (currentIndex() >= 0) {
+        if (pillAnim_ && pillAnim_->state() == QAbstractAnimation::Running) {
+            pillAnim_->stop();
+        }
         pillGeometry_ = pillRectForIndex(currentIndex());
     }
 }
@@ -182,6 +205,18 @@ void ChromeTabBar::onCurrentChanged(int index)
         return;
     }
     animatePillTo(pillRectForIndex(index));
+}
+
+void ChromeTabBar::onTabMoved(int from, int to)
+{
+    if (from >= 0 && from < tabIds_.size() && to >= 0 && to < tabIds_.size()) {
+        const quint64 id = tabIds_.takeAt(from);
+        tabIds_.insert(to, id);
+    }
+    if (currentIndex() >= 0) {
+        animatePillTo(pillRectForIndex(currentIndex()));
+    }
+    update();
 }
 
 void ChromeTabBar::animatePillTo(const QRectF &target)
@@ -211,9 +246,6 @@ QRectF ChromeTabBar::pillRectForIndex(int index) const
     if (r.isEmpty()) {
         return QRectF();
     }
-    // The pill sits inside the tab rect with a small vertical inset to leave
-    // room for the strip top/bottom gradient (matches the prototype's 8px top
-    // offset on a 60px container).
     QRectF f(r);
     f.setHeight(kTabHeight);
     f.moveTop(r.top() + std::max(0, (r.height() - kTabHeight) / 2));
@@ -273,6 +305,80 @@ void ChromeTabBar::leaveEvent(QEvent *event)
     update();
 }
 
+qreal ChromeTabBar::appearProgressFor(int index) const
+{
+    if (index < 0 || index >= tabIds_.size()) {
+        return 1.0;
+    }
+    return appearProgress_.value(tabIds_.at(index), 1.0);
+}
+
+qreal ChromeTabBar::closeProgressFor(int index) const
+{
+    if (index < 0 || index >= tabIds_.size()) {
+        return 0.0;
+    }
+    return closeProgress_.value(tabIds_.at(index), 0.0);
+}
+
+bool ChromeTabBar::isClosing(int index) const
+{
+    if (index < 0 || index >= tabIds_.size()) {
+        return false;
+    }
+    return closeAnims_.contains(tabIds_.at(index));
+}
+
+void ChromeTabBar::startAppearAnim(quint64 id)
+{
+    auto *anim = new QVariantAnimation(this);
+    anim->setStartValue(0.0);
+    anim->setEndValue(1.0);
+    anim->setDuration(kAppearDuration);
+    anim->setEasingCurve(QEasingCurve::OutCubic);
+    appearAnims_.insert(id, anim);
+    connect(anim, &QVariantAnimation::valueChanged, this, [this, id](const QVariant &v) {
+        appearProgress_[id] = v.toReal();
+        update();
+    });
+    connect(anim, &QVariantAnimation::finished, this, [this, id]() {
+        appearProgress_[id] = 1.0;
+        appearAnims_.remove(id);
+        update();
+    });
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void ChromeTabBar::startCloseAnim(int index)
+{
+    if (index < 0 || index >= tabIds_.size()) {
+        return;
+    }
+    const quint64 id = tabIds_.at(index);
+    if (closeAnims_.contains(id)) {
+        return;
+    }
+    auto *anim = new QVariantAnimation(this);
+    anim->setStartValue(0.0);
+    anim->setEndValue(1.0);
+    anim->setDuration(kCloseDuration);
+    anim->setEasingCurve(QEasingCurve::InCubic);
+    closeProgress_[id] = 0.0;
+    closeAnims_.insert(id, anim);
+    connect(anim, &QVariantAnimation::valueChanged, this, [this, id](const QVariant &v) {
+        closeProgress_[id] = v.toReal();
+        update();
+    });
+    connect(anim, &QVariantAnimation::finished, this, [this, id]() {
+        closeAnims_.remove(id);
+        const int currentIdx = tabIds_.indexOf(id);
+        if (currentIdx >= 0) {
+            emit tabCloseClicked(currentIdx);
+        }
+    });
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
 void ChromeTabBar::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
@@ -283,12 +389,19 @@ void ChromeTabBar::mousePressEvent(QMouseEvent *event)
             update();
             return;
         }
-        // Middle button or close-tab dispatch: middle-click closes.
     }
     if (event->button() == Qt::MiddleButton) {
         const int idx = tabAt(event->pos());
         if (idx >= 0) {
-            emit tabCloseClicked(idx);
+            startCloseAnim(idx);
+            event->accept();
+            return;
+        }
+    }
+    // Don't let clicks fall on a tab that's already animating closed.
+    if (event->button() == Qt::LeftButton) {
+        const int idx = tabAt(event->pos());
+        if (idx >= 0 && isClosing(idx)) {
             event->accept();
             return;
         }
@@ -309,7 +422,7 @@ void ChromeTabBar::mouseReleaseEvent(QMouseEvent *event)
         const int idx = pressedCloseIndex_;
         pressedCloseIndex_ = -1;
         if (releasedOver == idx && idx >= 0 && idx < count()) {
-            emit tabCloseClicked(idx);
+            startCloseAnim(idx);
             event->accept();
             return;
         }
@@ -323,77 +436,89 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // 1. Strip background gradient.
-    QLinearGradient stripGradient(0, 0, 0, height());
-    stripGradient.setColorAt(0, QColor(kStripTopColor));
-    stripGradient.setColorAt(1, QColor(kStripBottomColor));
-    p.fillRect(rect(), stripGradient);
+    // Strip surface — flat M3 surface-container so it visually unifies with
+    // the toolbar and pane below (no banding between widgets).
+    p.fillRect(rect(), QColor("#eef0f7"));
 
-    // 2. Bottom border.
+    // Bottom hairline, like Chrome's top-strip separator.
     p.setPen(QColor(kStripBorderColor));
     p.drawLine(0, height() - 1, width(), height() - 1);
 
     const int current = currentIndex();
     const int total = count();
 
-    // 3. Inactive tabs (background + border + hover).
+    // 1. Inactive tab pills (so the active pill paints over them).
     for (int i = 0; i < total; ++i) {
         if (i == current) {
             continue;
         }
-        const QRectF pill = pillRectForIndex(i);
+        QRectF pill = pillRectForIndex(i);
         if (pill.isEmpty()) {
             continue;
         }
+        const qreal appear = appearProgressFor(i);
+        const qreal close = closeProgressFor(i);
+        const qreal alpha = std::max(0.0, std::min(1.0, appear * (1.0 - close)));
+        if (alpha <= 0.001) {
+            continue;
+        }
+        const qreal yShift = (1.0 - appear) * 6.0 + close * 6.0;
+        pill.translate(0, yShift);
+
+        p.save();
+        p.setOpacity(alpha);
         const QPainterPath path = roundedPath(pill, kTabPillRadius);
 
-        QColor bg(kTabBackground);
-        bg.setAlphaF(0.92);
-        p.fillPath(path, bg);
-
         if (i == hoverTabIndex_) {
-            QColor hover(kTabHoverBackground);
-            hover.setAlphaF(0.86);
-            p.fillPath(path, hover);
+            p.fillPath(path, QColor(kTabHoverBackground));
             p.setPen(QPen(QColor(kTabHoverBorder), 1));
         } else {
+            // Inactive tabs are essentially flat against the strip with a
+            // subtle outline — matches the prototype's `--tab-bg`.
             p.setPen(QPen(QColor(kTabBorder), 1));
         }
         p.drawPath(path);
-
-        // Soft inner highlight (1px white inset).
-        QPainterPath inner = roundedPath(pill.adjusted(0.5, 0.5, -0.5, -0.5), kTabPillRadius - 0.5);
-        QPen innerPen{QColor(255, 255, 255, 209)}; // rgba(255,255,255,.82)
-        innerPen.setWidthF(0.8);
-        p.strokePath(inner, innerPen);
+        p.restore();
     }
 
-    // 4. Active pill (gradient + border).
+    // 2. Active pill (M3 primary-container with primary outline).
     if (current >= 0 && !pillGeometry_.isNull()) {
-        const QPainterPath path = roundedPath(pillGeometry_, kTabPillRadius);
-        QLinearGradient pillGradient(pillGeometry_.topLeft(), pillGeometry_.bottomLeft());
-        pillGradient.setColorAt(0, QColor(255, 255, 255, 128)); // rgba(255,255,255,.50)
-        pillGradient.setColorAt(1, QColor(255, 255, 255, 10));  // rgba(255,255,255,.04)
-        p.fillPath(path, QColor(kPillBase));
-        p.fillPath(path, pillGradient);
-        QPen pen{QColor(kPillBorder)};
-        pen.setWidthF(1.5);
-        p.setPen(pen);
-        p.drawPath(path);
-
-        QPainterPath inner = roundedPath(pillGeometry_.adjusted(0.6, 0.6, -0.6, -0.6),
-                                         kTabPillRadius - 0.6);
-        QPen innerPen{QColor(255, 255, 255, 188)}; // rgba(255,255,255,.74)
-        innerPen.setWidthF(0.9);
-        p.strokePath(inner, innerPen);
+        const qreal appear = appearProgressFor(current);
+        const qreal close = closeProgressFor(current);
+        const qreal alpha = std::max(0.0, std::min(1.0, appear * (1.0 - close)));
+        if (alpha > 0.001) {
+            QRectF pill = pillGeometry_;
+            const qreal yShift = (1.0 - appear) * 6.0 + close * 6.0;
+            pill.translate(0, yShift);
+            const QPainterPath path = roundedPath(pill, kTabPillRadius);
+            p.save();
+            p.setOpacity(alpha);
+            p.fillPath(path, QColor(kPillBase));
+            QPen pen{QColor(kPillBorder)};
+            pen.setWidthF(1.4);
+            p.setPen(pen);
+            p.drawPath(path);
+            p.restore();
+        }
     }
 
-    // 5. Tab content (favicon + title + close button) for every tab.
+    // 3. Per-tab content (favicon + title + close button).
     for (int i = 0; i < total; ++i) {
-        const QRect r = tabRect(i);
+        QRect r = tabRect(i);
         if (r.isEmpty()) {
             continue;
         }
+        const qreal appear = appearProgressFor(i);
+        const qreal close = closeProgressFor(i);
+        const qreal alpha = std::max(0.0, std::min(1.0, appear * (1.0 - close)));
+        if (alpha <= 0.001) {
+            continue;
+        }
+        const qreal yShift = (1.0 - appear) * 6.0 + close * 6.0;
+        r.translate(0, qRound(yShift));
+
+        p.save();
+        p.setOpacity(alpha);
 
         const bool isActive = (i == current);
         const QColor textColor(isActive ? kActiveText
@@ -401,13 +526,12 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
 
         // Favicon
         const QIcon icon = tabIcon(i);
-        const QRect favRect = faviconRect(i);
+        QRect favRect(r.left() + kPaddingLeft,
+                      r.top() + (r.height() - kFaviconSize) / 2,
+                      kFaviconSize, kFaviconSize);
         if (!icon.isNull()) {
-            icon.paint(&p, favRect, Qt::AlignCenter,
-                       isActive ? QIcon::Normal : QIcon::Normal,
-                       QIcon::On);
+            icon.paint(&p, favRect, Qt::AlignCenter, QIcon::Normal, QIcon::On);
         } else {
-            // Placeholder dot so the layout looks right when no favicon yet.
             p.setPen(Qt::NoPen);
             QColor dot = textColor;
             dot.setAlphaF(0.18);
@@ -417,14 +541,16 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
         }
 
         // Title
-        const QRect closeR = closeIconRect(i);
+        QRect closeR(r.right() - kPaddingRight - kCloseSize,
+                     r.top() + (r.height() - kCloseSize) / 2,
+                     kCloseSize, kCloseSize);
         QRect titleRect(favRect.right() + 11,
                         r.top(),
                         closeR.left() - (favRect.right() + 11) - 8,
                         r.height());
         if (titleRect.width() > 0) {
             QFont f = font();
-            f.setPixelSize(15);
+            f.setPixelSize(14);
             f.setWeight(QFont::Medium);
             p.setFont(f);
             p.setPen(textColor);
@@ -437,14 +563,13 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
         const bool isHoverClose = (i == hoverCloseIndex_);
         const bool isPressed = (i == pressedCloseIndex_);
         if (isHoverClose || isPressed) {
-            QColor bg(0, 0, 0, isPressed ? 36 : 26);
+            QColor bg(0, 26, 65, isPressed ? 60 : 38); // M3 on-primary-container tint
             p.setPen(Qt::NoPen);
             p.setBrush(bg);
             p.drawEllipse(closeR);
         }
-        // Draw the X glyph
         QPen xPen{QColor(kCloseIconColor)};
-        xPen.setWidthF(1.6);
+        xPen.setWidthF(1.5);
         xPen.setCapStyle(Qt::RoundCap);
         p.setPen(xPen);
         const qreal pad = 7.5;
@@ -453,11 +578,12 @@ void ChromeTabBar::paintEvent(QPaintEvent * /*event*/)
         p.save();
         p.translate(c);
         if (isHoverClose) {
-            // Spin slightly on hover (mirrors the HTML's rotate(90deg) hover).
             p.rotate(90);
         }
         p.drawLine(QPointF(-half, -half), QPointF(half, half));
         p.drawLine(QPointF(-half, half), QPointF(half, -half));
+        p.restore();
+
         p.restore();
     }
 }
@@ -480,4 +606,3 @@ ChromeTabBar *ChromeTabWidget::chromeBar() const
 {
     return qobject_cast<ChromeTabBar *>(tabBar());
 }
-

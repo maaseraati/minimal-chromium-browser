@@ -5,13 +5,15 @@
 #include <QRectF>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QVariantAnimation>
+#include <QVector>
 
 class QPropertyAnimation;
-class QVariantAnimation;
 
-// Custom tab bar that paints rounded "pill" tabs in the green prototype style
-// and animates the active-tab pill via QPropertyAnimation on its QRectF
-// geometry (mirrors the HTML prototype's `.active-pill` CSS element).
+// Custom tab bar that paints rounded "pill" tabs in the prototype style and
+// animates the active-tab pill via QPropertyAnimation on its QRectF property
+// (mirrors the HTML prototype's `.active-pill` element). New tabs fade /
+// slide in on insert and fade / slide out before being removed on close.
 class ChromeTabBar final : public QTabBar {
     Q_OBJECT
     Q_PROPERTY(QRectF pillGeometry READ pillGeometry WRITE setPillGeometry)
@@ -27,6 +29,8 @@ public:
     void snapPillToCurrent();
 
 signals:
+    // Emitted *after* the close animation finishes so the embedder can
+    // actually remove the underlying widget.
     void tabCloseClicked(int index);
 
 protected:
@@ -44,6 +48,7 @@ protected:
 
 private slots:
     void onCurrentChanged(int index);
+    void onTabMoved(int from, int to);
 
 private:
     QRectF pillRectForIndex(int index) const;
@@ -53,12 +58,27 @@ private:
     void animatePillTo(const QRectF &target);
     void updateHover(const QPoint &pos);
 
+    qreal appearProgressFor(int index) const;
+    qreal closeProgressFor(int index) const;
+    bool isClosing(int index) const;
+    void startAppearAnim(quint64 id);
+    void startCloseAnim(int index);
+
     QPointer<QPropertyAnimation> pillAnim_;
     QRectF pillGeometry_;
     int hoverTabIndex_ = -1;
     int hoverCloseIndex_ = -1;
     int pressedCloseIndex_ = -1;
     bool firstLayout_ = true;
+
+    // Per-tab animation state keyed by stable ID (positions shift as tabs are
+    // moved/inserted/removed, so we can't key by index).
+    QVector<quint64> tabIds_;
+    QHash<quint64, qreal> appearProgress_;       // 0..1, 1 = fully visible
+    QHash<quint64, qreal> closeProgress_;        // 0..1, 1 = fully gone
+    QHash<quint64, QVariantAnimation *> appearAnims_;
+    QHash<quint64, QVariantAnimation *> closeAnims_;
+    quint64 nextTabId_ = 1;
 };
 
 // Tiny QTabWidget subclass that injects ChromeTabBar (QTabWidget::setTabBar is
@@ -71,4 +91,3 @@ public:
 
     ChromeTabBar *chromeBar() const;
 };
-

@@ -6,66 +6,57 @@
 
 namespace {
 
-// HTML prototype palette (--page is the desktop fall-through, but the chrome
-// itself is rendered with the cream/green palette below):
-//   --chrome-top:    #fbfcf4
-//   --chrome-bottom: #f5f7ee
-//   --tab-active:    #d9e5c9
-//   --accent / menu: #71814f
-//   --new-tab fill:  #bed09a
-//   --omnibox bg:    #fbfcf7 (focus #ffffff)
-//   --text:          #1e211b
-//   --muted:         #555b4f
+// Material 3 light palette mirrored from morphine://home so chrome and the
+// home page share the same accent (`#4a76b3` primary, `#d8e2ff`
+// primary-container, `#001a41` on-primary-container, `#fafbff` /
+// `#eef0f7` / `#e2e6ee` surface tiers, `#44474e` on-surface-variant,
+// `#c4c6cf` outline-variant).
 constexpr auto kStyleSheet = R"QSS(
 QMainWindow,
 QWidget#centralWidget {
-    background: #f5f7ee;
-    color: #1e211b;
+    background: #fafbff;
+    color: #1a1c1f;
 }
 
 QStatusBar {
-    background: #f5f7ee;
-    color: #555b4f;
-    border-top: 1px solid #dfe4d6;
+    background: #fafbff;
+    color: #44474e;
+    border-top: 1px solid #e2e6ee;
     font-size: 12px;
 }
 
 QStatusBar::item { border: none; }
 
 QSplitter::handle {
-    background: #dfe4d6;
+    background: #e2e6ee;
     width: 1px;
 }
 
-/* Tab strip + corner widgets share the cream gradient with the tab bar. */
+/* Tab strip + corner widgets share one surface so there's no banding. */
 QTabWidget::pane {
     border: 0;
-    background: #f5f7ee;
+    background: #fafbff;
 }
 
-QTabWidget::tab-bar {
-    left: 0;
-}
+QTabWidget::tab-bar { left: 0; }
 
 QTabWidget::corner {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 #fbfcf4, stop:1 #f6f8ef);
-    border-bottom: 1px solid #dfe4d6;
+    background: #eef0f7;
+    border-bottom: 1px solid #e2e6ee;
 }
 
 QWidget#chromeCorner {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 #fbfcf4, stop:1 #f6f8ef);
-    border-bottom: 1px solid #dfe4d6;
+    background: #eef0f7;
+    border-bottom: 1px solid #e2e6ee;
 }
 
 QTabBar { background: transparent; qproperty-drawBase: 0; }
 
-/* Menu chip — dark green block on the very left of the tab strip. */
+/* Menu chip — M3 primary block at the very left of the tab strip. */
 QToolButton#chromeMenu {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 #71814f, stop:1 #586a3e);
-    color: #eef5e5;
+                                stop:0 #4a76b3, stop:1 #2e5a99);
+    color: #ffffff;
     border: 0;
     border-bottom-right-radius: 16px;
     padding: 0;
@@ -73,26 +64,32 @@ QToolButton#chromeMenu {
 
 QToolButton#chromeMenu:hover {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 #7c8d56, stop:1 #607143);
+                                stop:0 #5683c0, stop:1 #3a68a8);
+}
+
+QToolButton#chromeMenu:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #3e6aa6, stop:1 #244e8c);
 }
 
 QToolButton#chromeMenu::menu-indicator { image: none; width: 0; }
 
-/* New-tab pill on the right — light-green chip. */
+/* New-tab pill on the right — light primary-container chip. */
 QToolButton#chromeNewTab {
-    background: #bed09a;
-    color: #141a10;
-    border: 0;
+    background: #d8e2ff;
+    color: #001a41;
+    border: 1px solid #c1d0f5;
     border-radius: 14px;
     padding: 0;
 }
 
 QToolButton#chromeNewTab:hover {
-    background: #c7d8a5;
+    background: #c5d3fa;
+    border-color: #a8baee;
 }
 
 QToolButton#chromeNewTab:pressed {
-    background: #b1c587;
+    background: #b3c4f3;
 }
 
 QToolButton#chromeNewTab::menu-indicator { image: none; width: 0; }
@@ -102,22 +99,22 @@ QToolButton#windowControl {
     background: transparent;
     border: 0;
     border-radius: 8px;
-    color: #32372f;
+    color: #44474e;
 }
 
 QToolButton#windowControl:hover {
-    background: rgba(76, 91, 53, 0.10);
+    background: rgba(74, 118, 179, 0.10);
 }
 
 QToolButton#windowControl:pressed {
-    background: rgba(76, 91, 53, 0.16);
+    background: rgba(74, 118, 179, 0.18);
 }
 
 QToolButton#windowClose {
     background: transparent;
     border: 0;
     border-radius: 8px;
-    color: #32372f;
+    color: #44474e;
 }
 
 QToolButton#windowClose:hover {
@@ -133,108 +130,108 @@ QToolButton#windowClose:pressed {
 QToolButton#windowControl::menu-indicator,
 QToolButton#windowClose::menu-indicator { image: none; width: 0; }
 
-/* Toolbar (back/forward/reload/profile + omnibox). */
+/* Toolbar (back/forward/reload + omnibox + profile). Kept on the same
+   surface family as the strip so the chrome reads as one block. */
 QWidget#chromeToolbar {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 #f7f9f1, stop:1 #f3f5ec);
-    border-bottom: 1px solid #e6ead9;
+    background: #fafbff;
+    border-bottom: 1px solid #e2e6ee;
 }
 
 QToolButton#navButton {
     background: transparent;
-    color: #59604f;
+    color: #44474e;
     border: 0;
     border-radius: 24px;
     padding: 0;
 }
 
 QToolButton#navButton:hover {
-    background: #eef2e7;
-    color: #252a20;
+    background: #eef0f7;
+    color: #1a1c1f;
 }
 
 QToolButton#navButton:pressed {
-    background: #e3e9d9;
+    background: #e2e6ee;
 }
 
 QToolButton#navButton:disabled {
-    color: #b6bdaa;
+    color: #b6b9c1;
 }
 
 QToolButton#navReload {
-    background: #bed09a;
-    color: #172011;
-    border: 1px solid #a9bd7f;
+    background: #d8e2ff;
+    color: #001a41;
+    border: 1px solid #c1d0f5;
     border-radius: 24px;
     padding: 0;
 }
 
 QToolButton#navReload:hover {
-    background: #c7d8a5;
-    border-color: #95ad67;
+    background: #c5d3fa;
+    border-color: #a8baee;
 }
 
 QToolButton#navReload:pressed {
-    background: #b1c587;
+    background: #b3c4f3;
 }
 
 QToolButton#profileButton {
-    background: #d4e0b8;
-    color: #2e3b1b;
+    background: #d8e2ff;
+    color: #001a41;
     border: 0;
     border-radius: 24px;
     padding: 0;
 }
 
 QToolButton#profileButton:hover {
-    background: #cad7ad;
+    background: #c5d3fa;
 }
 
 QToolButton#profileButton:pressed {
-    background: #c0cfa1;
+    background: #b3c4f3;
 }
 
 QToolButton#navButton::menu-indicator,
 QToolButton#navReload::menu-indicator,
 QToolButton#profileButton::menu-indicator { image: none; width: 0; }
 
-/* Omnibox — pill-shaped input matching the prototype. */
+/* Omnibox — pill input matching the prototype. */
 QLineEdit#omnibox {
-    background: #fbfcf7;
-    color: #20241d;
-    border: 1px solid #dfe4d8;
+    background: #eef0f7;
+    color: #1a1c1f;
+    border: 1px solid #e2e6ee;
     border-radius: 23px;
     padding: 6px 20px;
-    selection-background-color: #d9e5c9;
-    selection-color: #1e211b;
-    font-size: 15px;
+    selection-background-color: #d8e2ff;
+    selection-color: #001a41;
+    font-size: 14px;
 }
 
 QLineEdit#omnibox:focus {
     background: #ffffff;
-    border-color: #c7d8a5;
+    border-color: #4a76b3;
 }
 
 /* Generic line edits (find bar, settings dialog). */
 QLineEdit {
-    background: #fbfcf7;
-    color: #20241d;
-    border: 1px solid #dfe4d8;
+    background: #eef0f7;
+    color: #1a1c1f;
+    border: 1px solid #e2e6ee;
     border-radius: 14px;
     padding: 6px 14px;
-    selection-background-color: #d9e5c9;
-    selection-color: #1e211b;
+    selection-background-color: #d8e2ff;
+    selection-color: #001a41;
     font-size: 13px;
 }
 
 QLineEdit:focus {
-    border-color: #c7d8a5;
+    border-color: #4a76b3;
 }
 
 /* Default tool buttons elsewhere (settings dialog, find bar). */
 QToolButton {
     background: transparent;
-    color: #59604f;
+    color: #44474e;
     border: 0;
     border-radius: 14px;
     padding: 4px;
@@ -243,16 +240,16 @@ QToolButton {
 }
 
 QToolButton:hover {
-    background: #eef2e7;
-    color: #252a20;
+    background: #eef0f7;
+    color: #1a1c1f;
 }
 
 QToolButton:pressed {
-    background: #e3e9d9;
+    background: #e2e6ee;
 }
 
 QToolButton#primaryAction {
-    background: #71814f;
+    background: #4a76b3;
     color: #ffffff;
     border-radius: 18px;
     min-width: 36px;
@@ -261,17 +258,17 @@ QToolButton#primaryAction {
 }
 
 QToolButton#primaryAction:hover {
-    background: #7c8d56;
+    background: #5683c0;
 }
 
 QToolButton#primaryAction:pressed {
-    background: #5e6f3f;
+    background: #3e6aa6;
 }
 
 QPushButton {
-    background: #bed09a;
-    color: #172011;
-    border: 1px solid #a9bd7f;
+    background: #d8e2ff;
+    color: #001a41;
+    border: 1px solid #c1d0f5;
     border-radius: 16px;
     padding: 7px 20px;
     font-weight: 600;
@@ -279,45 +276,45 @@ QPushButton {
 }
 
 QPushButton:hover {
-    background: #c7d8a5;
-    border-color: #95ad67;
+    background: #c5d3fa;
+    border-color: #a8baee;
 }
 
 QPushButton:pressed {
-    background: #b1c587;
+    background: #b3c4f3;
 }
 
 QPushButton:disabled {
-    background: #e3e9d9;
-    color: #97a181;
-    border-color: #d6dcc4;
+    background: #eef0f7;
+    color: #aab0bc;
+    border-color: #e2e6ee;
 }
 
 QProgressBar {
-    background: #eef2e7;
+    background: #eef0f7;
     border: 0;
     max-height: 2px;
 }
 
-QProgressBar::chunk { background: #71814f; }
+QProgressBar::chunk { background: #4a76b3; }
 
 /* Lists used for bookmarks / history side panel. */
 QListWidget {
-    background: #fbfcf4;
-    color: #1e211b;
+    background: #fafbff;
+    color: #1a1c1f;
     border: 0;
     padding: 4px;
     outline: none;
 }
 
 QListWidget::item { padding: 8px 10px; border-radius: 8px; }
-QListWidget::item:hover { background: #eef2e7; }
-QListWidget::item:selected { background: #d9e5c9; color: #1e211b; }
+QListWidget::item:hover { background: #eef0f7; }
+QListWidget::item:selected { background: #d8e2ff; color: #001a41; }
 
 QMenu {
-    background: #fbfcf4;
-    color: #1e211b;
-    border: 1px solid #dfe4d8;
+    background: #fafbff;
+    color: #1a1c1f;
+    border: 1px solid #e2e6ee;
     border-radius: 12px;
     padding: 6px;
 }
@@ -329,13 +326,13 @@ QMenu::item {
 }
 
 QMenu::item:selected {
-    background: #d9e5c9;
-    color: #1e211b;
+    background: #d8e2ff;
+    color: #001a41;
 }
 
 QMenu::separator {
     height: 1px;
-    background: #dfe4d8;
+    background: #e2e6ee;
     margin: 4px 8px;
 }
 
@@ -346,13 +343,13 @@ QScrollBar:vertical {
 }
 
 QScrollBar::handle:vertical {
-    background: #c7d0b9;
+    background: #c4c6cf;
     border-radius: 4px;
     min-height: 30px;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #b3bea2;
+    background: #a9adb8;
 }
 
 QScrollBar::add-line:vertical,
@@ -362,22 +359,22 @@ QScrollBar::add-page:vertical,
 QScrollBar::sub-page:vertical { background: transparent; }
 
 /* Side panel tabs (bookmarks / history). */
-QTabWidget#sidePanel::pane { background: #fbfcf4; border: 0; }
+QTabWidget#sidePanel::pane { background: #fafbff; border: 0; }
 QTabWidget#sidePanel QTabBar::tab {
     background: transparent;
-    color: #555b4f;
+    color: #44474e;
     padding: 6px 14px;
     border-radius: 12px;
     margin: 4px 2px;
     font-weight: 500;
 }
 QTabWidget#sidePanel QTabBar::tab:selected {
-    background: #d9e5c9;
-    color: #1e211b;
+    background: #d8e2ff;
+    color: #001a41;
 }
 QTabWidget#sidePanel QTabBar::tab:hover:!selected {
-    background: #eef2e7;
-    color: #252a20;
+    background: #eef0f7;
+    color: #1a1c1f;
 }
 )QSS";
 

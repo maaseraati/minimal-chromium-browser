@@ -303,12 +303,12 @@ void BrowserWindow::changeEvent(QEvent *event)
 
 void BrowserWindow::refreshChromeIcons()
 {
-    // Green prototype: menu is dark-green block (light glyph), `+` sits on
-    // light-green pill (dark glyph), window controls live on the cream strip
-    // (medium-dark glyph).
-    const QColor menuGlyph(QStringLiteral("#eef5e5"));
-    const QColor newTabGlyph(QStringLiteral("#141a10"));
-    const QColor windowGlyph(QStringLiteral("#32372f"));
+    // M3 light: menu is the primary block (white glyph), `+` sits on the
+    // primary-container chip (deep ink glyph), window controls live on the
+    // surface-container strip (on-surface-variant glyph).
+    const QColor menuGlyph(QStringLiteral("#ffffff"));
+    const QColor newTabGlyph(QStringLiteral("#001a41"));
+    const QColor windowGlyph(QStringLiteral("#44474e"));
     if (menuButton_) {
         menuButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/menu.svg"), menuGlyph));
     }
@@ -329,7 +329,7 @@ void BrowserWindow::updateMaximizeIcon()
     if (!maxButton_) {
         return;
     }
-    const QColor windowGlyph(QStringLiteral("#32372f"));
+    const QColor windowGlyph(QStringLiteral("#44474e"));
     const QString resource = isMaximized()
         ? QStringLiteral(":/assets/window-restore.svg")
         : QStringLiteral(":/assets/window-max.svg");
