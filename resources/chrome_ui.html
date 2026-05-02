@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Morphine Chrome</title>
+  <style>
+    :root {
+      --chrome-top: #fbfcf4;
+      --chrome-bottom: #f5f7ee;
+      --toolbar: #f5f7ee;
+      --tab: rgba(250, 251, 244, .92);
+      --tab-hover: rgba(237, 241, 226, .86);
+      --tab-active: #d9e5c9;
+      --tab-border: #e1e5d8;
+      --text: #1e211b;
+      --muted: #555b4f;
+      --icon: #32372f;
+      --omnibox: #fbfcf7;
+      --omnibox-focus: #ffffff;
+      --accent: #b9cc93;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--chrome-top);
+      color: var(--text);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .browser {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, var(--chrome-top), var(--chrome-bottom));
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tab-strip {
+      height: 66px;
+      flex: 0 0 66px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px 0 0;
+      gap: 12px;
+      background: linear-gradient(180deg, #fbfcf4 0%, #f6f8ef 100%);
+      border-bottom: 1px solid #dfe4d6;
+      position: relative;
+    }
+
+    .drag-region {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .menu {
+      width: 78px;
+      height: 66px;
+      border-radius: 0 0 16px 0;
+      display: grid;
+      place-items: center;
+      color: #eef5e5;
+      background: linear-gradient(135deg, #71814f, #586a3e);
+      flex: 0 0 auto;
+      box-shadow: 0 2px 10px rgba(78, 94, 54, .24);
+      transition: filter 180ms ease, background 180ms ease;
+      cursor: pointer;
+    }
+
+    .menu:hover { filter: brightness(1.04); }
+    .menu:active { filter: brightness(.98); }
+
+    .tabs {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      --tab-width: 310px;
+    }
+
+    .active-pill {
+      position: absolute;
+      left: 0;
+      top: 8px;
+      width: 0;
+      height: 44px;
+      border-radius: 15px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .50), rgba(255, 255, 255, .04)),
+        var(--tab-active);
+      border: 1.5px solid #627748;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .74) inset,
+        0 2px 7px rgba(83, 103, 55, .13);
+      pointer-events: none;
+      opacity: 0;
+      will-change: transform, width;
+      transition: opacity 180ms ease;
+      z-index: 0;
+    }
+
+    .tab {
+      flex: 0 0 var(--tab-width);
+      width: var(--tab-width);
+      max-width: var(--tab-width);
+      min-width: 0;
+      height: 44px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 12px 0 18px;
+      border-radius: 15px;
+      color: var(--muted);
+      background: var(--tab);
+      border: 1px solid var(--tab-border);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .82) inset,
+        0 1px 5px rgba(83, 91, 70, .08);
+      cursor: grab;
+      user-select: none;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-app-region: no-drag;
+      transition:
+        flex-basis 260ms cubic-bezier(.2, .8, .2, 1),
+        width 260ms cubic-bezier(.2, .8, .2, 1),
+        max-width 260ms cubic-bezier(.2, .8, .2, 1),
+        padding 220ms cubic-bezier(.2, .8, .2, 1),
+        margin 220ms cubic-bezier(.2, .8, .2, 1),
+        background 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        box-shadow 180ms ease,
+        opacity 180ms ease,
+        transform 240ms cubic-bezier(.2, .8, .2, 1);
+      z-index: 1;
+    }
+
+    .tab.dragging {
+      z-index: 5;
+      cursor: grabbing;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .82) inset,
+        0 8px 24px rgba(60, 70, 45, .28);
+      transition:
+        background 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        box-shadow 180ms ease,
+        opacity 180ms ease;
+    }
+
+    .tab.settling {
+      z-index: 4;
+      transition:
+        transform 280ms cubic-bezier(.2, .8, .2, 1),
+        box-shadow 240ms ease;
+    }
+
+    .tab::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(231, 237, 219, .72);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .tab:hover { color: #262b21; border-color: #d9dece; }
+    .tab:hover::before { opacity: 1; }
+
+    .tab.active {
+      color: var(--text);
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .tab.active:hover { color: var(--text); border-color: transparent; }
+    .tab.active:hover::before { opacity: 0; }
+
+    .tab.closing {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    .tab.opening {
+      flex-basis: 0;
+      width: 0;
+      max-width: 0;
+      min-width: 0;
+      padding-inline: 0;
+      opacity: 0;
+    }
+
+    .favicon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      background: transparent;
+      box-shadow: none;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .favicon img {
+      width: 18px;
+      height: 18px;
+      display: block;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .favicon.spinner::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(50, 55, 47, .25);
+      border-top-color: #627748;
+      border-radius: 50%;
+      animation: faviconSpin 720ms linear infinite;
+    }
+
+    @keyframes faviconSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .title {
+      min-width: 0;
+      flex: 1;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: -.012em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .close {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: #1f241d;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      cursor: pointer;
+      transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .close:hover {
+      background: rgba(255, 255, 255, .10);
+      color: #11140f;
+      transform: rotate(90deg);
+    }
+
+    .new-tab {
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 14px;
+      background: #bed09a;
+      color: #141a10;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .56) inset,
+        0 5px 12px rgba(103, 122, 70, .18);
+      transition: background 180ms ease, box-shadow 180ms ease, color 180ms ease;
+    }
+
+    .new-tab:hover {
+      background: #c7d8a5;
+      color: #10150d;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .62) inset,
+        0 7px 16px rgba(103, 122, 70, .23);
+    }
+
+    .new-tab:active { background: #b1c587; }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--icon);
+      margin-left: 14px;
+      flex: 0 0 auto;
+    }
+
+    .window-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      opacity: .94;
+      transition: background 160ms ease, opacity 160ms ease;
+      cursor: pointer;
+    }
+
+    .window-btn:hover { background: rgba(76, 91, 53, .08); opacity: 1; }
+    .window-btn:active { background: rgba(76, 91, 53, .13); }
+
+    .toolbar {
+      height: 70px;
+      flex: 0 0 70px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 24px 0 18px;
+      background: linear-gradient(180deg, #f7f9f1, #f3f5ec);
+    }
+
+    .nav {
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: #59604f;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset;
+      transition: background 170ms ease, color 170ms ease, box-shadow 170ms ease, opacity 170ms ease;
+    }
+
+    .nav:hover { background: #eef2e7; color: #252a20; }
+    .nav:active { background: #e3e9d9; }
+    .nav[disabled] { opacity: .35; pointer-events: none; }
+
+    .nav.reload {
+      background: #bed09a;
+      color: #172011;
+      border: 1px solid #a9bd7f;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, .35) inset,
+        0 4px 12px rgba(105, 124, 72, .16);
+    }
+
+    .nav.reload:hover { background: #c7d8a5; border-color: #95ad67; }
+    .nav.reload:active { background: #b1c587; }
+
+    .omnibox {
+      height: 46px;
+      flex: 1;
+      min-width: 0;
+      border-radius: 23px;
+      background: var(--omnibox);
+      border: 1px solid #dfe4d8;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      color: var(--muted);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, .92) inset,
+        0 2px 7px rgba(69, 77, 58, .08);
+      transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .omnibox:focus-within {
+      background: var(--omnibox-focus);
+      border-color: #c7d8a5;
+      box-shadow:
+        0 0 0 3px rgba(185, 204, 147, .20),
+        0 1px 0 rgba(255, 255, 255, .92) inset;
+    }
+
+    .lock {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      color: #697061;
+      transform: translateY(.3px);
+    }
+
+    .omnibox input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #20241d;
+      font: inherit;
+      font-size: 15px;
+      min-width: 0;
+      user-select: text;
+    }
+
+    .omnibox input::placeholder { color: #92988d; }
+
+    .profile {
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #2e3b1b;
+      background: #d4e0b8;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      transition: background 170ms ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .profile::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: currentColor;
+      opacity: 0;
+      transition: opacity 170ms ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .profile > * { position: relative; z-index: 1; }
+
+    .profile:hover::after { opacity: .08; }
+    .profile:focus-visible::after { opacity: .10; }
+    .profile:active::after { opacity: .14; }
+
+    .profile:focus-visible { outline: none; }
+    .profile svg { width: 24px; height: 24px; }
+
+    svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      stroke: currentColor;
+    }
+  </style>
+</head>
+<body>
+  <section class="browser" aria-label="Browser chrome">
+    <div class="tab-strip" id="tabStrip">
+      <div class="drag-region" id="dragRegion"></div>
+      <div class="menu" id="menuBtn" title="Menu">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:38px;height:38px"><path d="M19.8 2.7C11.6 4.2 5.3 9.8 3.5 17.4c2.8-2 5.6-3.2 8.5-3.7-3.1 1.6-5.4 3.8-7 6.7.8.5 1.8.8 3 .8 7.6 0 12.7-8.1 11.8-18.5Z"/></svg>
+      </div>
+      <div class="tabs" id="tabs"><div class="active-pill" id="activePill"></div></div>
+      <button class="new-tab" id="newTab" title="New tab">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke-width="2.1" stroke-linecap="round"/></svg>
+      </button>
+      <div class="window-controls">
+        <div class="window-btn" id="winMin" title="Minimize"><svg viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <div class="window-btn" id="winMax" title="Maximize"><svg viewBox="0 0 24 24" fill="none"><rect x="7" y="7" width="10" height="10" rx="1.5" stroke-width="1.8"/></svg></div>
+        <div class="window-btn" id="winClose" title="Close"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7 7 17" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="nav" id="backBtn" title="Back" aria-label="Back" disabled><svg viewBox="0 0 24 24" fill="none"><path d="M15 6 9 12l6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="nav" id="forwardBtn" title="Forward" aria-label="Forward" disabled><svg viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="nav reload" id="reloadBtn" title="Reload" aria-label="Reload"><svg viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <label class="omnibox">
+        <svg class="lock" viewBox="0 0 24 24" fill="none"><rect x="6" y="10" width="12" height="10" rx="2.2" stroke-width="1.8"/><path d="M8.5 10V7.6a3.5 3.5 0 0 1 7 0V10" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input id="urlInput" placeholder="Enter URL or search Google" spellcheck="false" autocomplete="off" />
+      </label>
+      <button class="profile" id="profileBtn" title="Profile" aria-label="Profile">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 9c4.42 0 8 1.79 8 4v3H4v-3c0-2.21 3.58-4 8-4Z"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+  <script>
+    "use strict";
+
+    const tabsEl = document.getElementById("tabs");
+    const activePill = document.getElementById("activePill");
+    const newTabBtn = document.getElementById("newTab");
+    const urlInput = document.getElementById("urlInput");
+    const backBtn = document.getElementById("backBtn");
+    const forwardBtn = document.getElementById("forwardBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const profileBtn = document.getElementById("profileBtn");
+    const winMin = document.getElementById("winMin");
+    const winMax = document.getElementById("winMax");
+    const winClose = document.getElementById("winClose");
+
+    /** @type {{title:string, iconUrl:string, isLoading:boolean}[]} */
+    const data = [];
+    let activeIndex = -1;
+    let bridge = null;
+    let suppressUrlSync = false;
+    let isLoading = false;
+    let lastUrl = "";
+
+    function defaultIconSvg() {
+      return '<svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:#7e8a72"><path d="M5 4h11l3 3v13H5V4Zm10 0v3h3"/></svg>';
+    }
+
+    function iconMarkup(tab) {
+      if (tab.isLoading) {
+        return `<span class="favicon spinner" aria-hidden="true"></span>`;
+      }
+      if (tab.iconUrl) {
+        const safe = String(tab.iconUrl).replace(/"/g, "&quot;");
+        return `<span class="favicon"><img src="${safe}" alt="" /></span>`;
+      }
+      return `<span class="favicon">${defaultIconSvg()}</span>`;
+    }
+
+    function setTabWidthForCount(tabCount) {
+      const count = Math.max(1, tabCount);
+      const gap = 14;
+      const maxWidth = 310;
+      const minWidth = 72;
+      const available = tabsEl.clientWidth - gap * (count - 1);
+      const width = Math.max(minWidth, Math.min(maxWidth, Math.floor(available / count)));
+      tabsEl.style.setProperty("--tab-width", `${width}px`);
+      return width;
+    }
+
+    function syncTabWidths() { return setTabWidthForCount(data.length); }
+
+    let pillRaf = null;
+
+    function cancelPillAnimation() {
+      if (pillRaf !== null) {
+        cancelAnimationFrame(pillRaf);
+        pillRaf = null;
+      }
+    }
+
+    function applyPill(left, width) {
+      activePill.style.opacity = "1";
+      activePill.style.transform = `translateX(${left}px)`;
+      activePill.style.width = `${width}px`;
+      activePill.dataset.left = String(left);
+      activePill.dataset.width = String(width);
+    }
+
+    function snapActivePill() {
+      const active = tabsEl.querySelector(`.tab[data-index="${activeIndex}"]`);
+      if (!active) {
+        activePill.style.opacity = "0";
+        return;
+      }
+      cancelPillAnimation();
+      applyPill(active.offsetLeft, active.offsetWidth);
+    }
+
+    function morphActivePill(duration = 280) {
+      cancelPillAnimation();
+      const started = performance.now();
+      const startLeft = parseFloat(activePill.dataset.left ?? "0") || 0;
+      const startWidth = parseFloat(activePill.dataset.width ?? "0") || 0;
+      const hasOrigin = startWidth > 0;
+
+      const step = (now) => {
+        const active = tabsEl.querySelector(`.tab[data-index="${activeIndex}"]`);
+        if (!active) { pillRaf = null; return; }
+        const targetLeft = active.offsetLeft;
+        const targetWidth = active.offsetWidth;
+        if (!hasOrigin) {
+          applyPill(targetLeft, targetWidth);
+          pillRaf = null;
+          return;
+        }
+        const elapsed = now - started;
+        const t = Math.min(1, elapsed / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        applyPill(
+          startLeft + (targetLeft - startLeft) * eased,
+          startWidth + (targetWidth - startWidth) * eased
+        );
+        if (t < 1) pillRaf = requestAnimationFrame(step);
+        else { applyPill(targetLeft, targetWidth); pillRaf = null; }
+      };
+      pillRaf = requestAnimationFrame(step);
+    }
+
+    function refreshTabIndexes() {
+      tabsEl.querySelectorAll(".tab").forEach((tab, index) => { tab.dataset.index = index; });
+    }
+
+    function updateTabContent(el, tab) {
+      const titleEl = el.querySelector(".title");
+      if (titleEl && titleEl.textContent !== tab.title) titleEl.textContent = tab.title;
+      const oldFavicon = el.querySelector(".favicon");
+      if (oldFavicon) {
+        const wantsSpinner = !!tab.isLoading;
+        const isSpinner = oldFavicon.classList.contains("spinner");
+        const currentImg = oldFavicon.querySelector("img");
+        const currentSrc = currentImg ? currentImg.getAttribute("src") : "";
+        if (wantsSpinner !== isSpinner || (!wantsSpinner && currentSrc !== (tab.iconUrl || ""))) {
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = iconMarkup(tab);
+          oldFavicon.replaceWith(wrapper.firstElementChild);
+        }
+      }
+    }
+
+    function createTabElement(tab, index) {
+      const el = document.createElement("div");
+      el.dataset.index = index;
+      el.className = `tab${index === activeIndex ? " active" : ""}`;
+      el.innerHTML = `
+        ${iconMarkup(tab)}
+        <span class="title"></span>
+        <button class="close" title="Close" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" style="width:16px;height:16px"><path d="M7 7l10 10M17 7 7 17" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      `;
+      el.querySelector(".title").textContent = tab.title || "New tab";
+      el.addEventListener("click", () => {
+        if (performance.now() - lastDragEndedAt < 120) return;
+        const i = Number(el.dataset.index);
+        if (i === activeIndex) return;
+        activate(i);
+        if (bridge) bridge.requestActivateTab(i);
+      });
+      el.querySelector(".close").addEventListener("click", event => {
+        event.stopPropagation();
+        if (performance.now() - lastDragEndedAt < 120) return;
+        closeTabAt(Number(el.dataset.index), el, /*notify=*/true);
+      });
+      el.addEventListener("pointerdown", event => startDrag(event, el));
+      el.addEventListener("pointermove", moveDrag);
+      el.addEventListener("pointerup", endDrag);
+      el.addEventListener("pointercancel", cancelDrag);
+      return el;
+    }
+
+    const TAB_GAP = 14;
+    const DRAG_THRESHOLD = 4;
+    let drag = null;
+    let lastDragEndedAt = 0;
+    let animBusy = false;
+
+    function readTranslateX(el) {
+      const m = /translateX\(\s*(-?[\d.]+)px\s*\)/.exec(el.style.transform || "");
+      return m ? parseFloat(m[1]) : 0;
+    }
+
+    function startDrag(event, el) {
+      if (event.button !== 0) return;
+      if (animBusy) return;
+      if (drag) return;
+      if (el.classList.contains("closing")) return;
+      if (event.target.closest(".close")) return;
+      const rect = el.getBoundingClientRect();
+      drag = {
+        el, startIndex: Number(el.dataset.index), currentSlot: Number(el.dataset.index),
+        pointerId: event.pointerId, startX: event.clientX, dx: 0,
+        tabWidth: rect.width, slotWidth: rect.width + TAB_GAP, moved: false,
+      };
+      el.setPointerCapture(event.pointerId);
+    }
+
+    function moveDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      drag.dx = dx;
+      if (!drag.moved) {
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        drag.moved = true;
+        drag.el.classList.add("dragging");
+        cancelPillAnimation();
+      }
+      drag.el.style.transform = `translateX(${dx}px)`;
+      const startHome = drag.startIndex * drag.slotWidth;
+      const draggedCenter = startHome + dx + drag.tabWidth / 2;
+      const slotIdx = Math.round((draggedCenter - drag.tabWidth / 2) / drag.slotWidth);
+      const clamped = Math.max(0, Math.min(slotIdx, data.length - 1));
+      if (clamped !== drag.currentSlot) {
+        drag.currentSlot = clamped;
+        updateDragDisplacement();
+      }
+      const activeTab = tabsEl.querySelector(`.tab[data-index="${activeIndex}"]`);
+      if (activeTab) {
+        applyPill(activeTab.offsetLeft + readTranslateX(activeTab), activeTab.offsetWidth);
+      }
+    }
+
+    function updateDragDisplacement() {
+      const startIdx = drag.startIndex;
+      const curSlot = drag.currentSlot;
+      tabsEl.querySelectorAll(".tab").forEach(t => {
+        if (t === drag.el) return;
+        if (t.classList.contains("closing")) return;
+        const idx = Number(t.dataset.index);
+        let displacement = 0;
+        if (curSlot > startIdx && idx > startIdx && idx <= curSlot) displacement = -drag.slotWidth;
+        else if (curSlot < startIdx && idx >= curSlot && idx < startIdx) displacement = drag.slotWidth;
+        t.style.transform = displacement === 0 ? "" : `translateX(${displacement}px)`;
+      });
+    }
+
+    function endDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      finishDrag(event, false);
+    }
+    function cancelDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      finishDrag(event, true);
+    }
+
+    function finishDrag(event, cancelled) {
+      const draggedEl = drag.el;
+      const startIdx = drag.startIndex;
+      const newSlot = cancelled ? startIdx : drag.currentSlot;
+      const dx = drag.dx || 0;
+      const slotWidth = drag.slotWidth;
+      const wasMoved = drag.moved;
+      if (draggedEl.hasPointerCapture(event.pointerId)) draggedEl.releasePointerCapture(event.pointerId);
+      if (!wasMoved) { drag = null; return; }
+
+      const reordering = newSlot !== startIdx;
+      if (reordering) {
+        const [moved] = data.splice(startIdx, 1);
+        data.splice(newSlot, 0, moved);
+        if (activeIndex === startIdx) activeIndex = newSlot;
+        else if (startIdx < activeIndex && activeIndex <= newSlot) activeIndex--;
+        else if (newSlot <= activeIndex && activeIndex < startIdx) activeIndex++;
+        const without = Array.from(tabsEl.querySelectorAll(".tab")).filter(t => t !== draggedEl);
+        if (newSlot < without.length) tabsEl.insertBefore(draggedEl, without[newSlot]);
+        else tabsEl.appendChild(draggedEl);
+        refreshTabIndexes();
+        tabsEl.querySelectorAll(".tab").forEach((tab, i) => { tab.classList.toggle("active", i === activeIndex); });
+        if (bridge) bridge.requestReorderTab(startIdx, newSlot);
+      }
+
+      const flipDelta = reordering ? (startIdx - newSlot) * slotWidth + dx : dx;
+      tabsEl.querySelectorAll(".tab").forEach(t => {
+        if (t === draggedEl) return;
+        t.style.transition = "none";
+        t.style.transform = "";
+      });
+      draggedEl.style.transform = `translateX(${flipDelta}px)`;
+      void tabsEl.offsetWidth;
+      tabsEl.querySelectorAll(".tab").forEach(t => {
+        if (t === draggedEl) return;
+        t.style.transition = "";
+      });
+      draggedEl.classList.remove("dragging");
+      draggedEl.classList.add("settling");
+      draggedEl.style.transform = "";
+
+      const settleEl = draggedEl;
+      setTimeout(() => {
+        settleEl.classList.remove("settling");
+        settleEl.style.transform = "";
+      }, 300);
+
+      morphActivePill(280);
+      lastDragEndedAt = performance.now();
+      drag = null;
+    }
+
+    function activate(index) {
+      if (index < 0 || index >= data.length) return;
+      if (index === activeIndex) return;
+      activeIndex = index;
+      tabsEl.querySelectorAll(".tab").forEach((tab, tabIndex) => {
+        tab.classList.toggle("active", tabIndex === index);
+      });
+      morphActivePill(280);
+    }
+
+    function closeTabAt(index, el, notify) {
+      if (animBusy || data.length <= 1 || el.classList.contains("closing")) return;
+      animBusy = true;
+
+      const closingWasActive = index === activeIndex;
+      const allTabs = Array.from(tabsEl.querySelectorAll(".tab"));
+      const oldRects = new Map();
+      allTabs.forEach(t => oldRects.set(t, t.getBoundingClientRect()));
+      const containerRect = tabsEl.getBoundingClientRect();
+
+      if (closingWasActive) {
+        const newIdx = index === 0 ? 1 : index - 1;
+        el.classList.remove("active");
+        const newActiveEl = tabsEl.querySelector(`.tab[data-index="${newIdx}"]`);
+        if (newActiveEl) newActiveEl.classList.add("active");
+        activeIndex = newIdx;
+      }
+
+      const elOld = oldRects.get(el);
+      el.style.position = "absolute";
+      el.style.left = `${elOld.left - containerRect.left}px`;
+      el.style.top = `${elOld.top - containerRect.top}px`;
+      el.style.width = `${elOld.width}px`;
+      el.style.height = `${elOld.height}px`;
+      el.style.margin = "0";
+      el.style.flex = "0 0 auto";
+      el.style.pointerEvents = "none";
+      el.style.zIndex = "0";
+      el.classList.add("closing");
+
+      const curActive = activeIndex;
+      data.splice(index, 1);
+      if (curActive > index) activeIndex = curActive - 1;
+      else if (curActive < index) activeIndex = curActive;
+      else activeIndex = Math.max(0, Math.min(index, data.length - 1));
+
+      const otherTabs = allTabs.filter(t => t !== el);
+      otherTabs.forEach((t, i) => { t.dataset.index = i; });
+      otherTabs.forEach((t, i) => t.classList.toggle("active", i === activeIndex));
+
+      const newRects = new Map();
+      otherTabs.forEach(t => newRects.set(t, t.getBoundingClientRect()));
+
+      otherTabs.forEach(t => {
+        const oldR = oldRects.get(t);
+        const newR = newRects.get(t);
+        const deltaX = oldR.left - newR.left;
+        if (Math.abs(deltaX) < 0.5) return;
+        t.style.transition = "none";
+        t.style.transform = `translateX(${deltaX}px)`;
+      });
+      void tabsEl.offsetWidth;
+      otherTabs.forEach(t => {
+        t.style.transition = "";
+        t.style.transform = "";
+      });
+      syncTabWidths();
+      morphActivePill(280);
+
+      setTimeout(() => {
+        el.remove();
+        otherTabs.forEach(t => {
+          t.style.transition = "";
+          t.style.transform = "";
+        });
+        snapActivePill();
+        animBusy = false;
+      }, 320);
+
+      if (notify && bridge) bridge.requestCloseTab(index);
+    }
+
+    function openTabAt(index, tabData, animate) {
+      const el = createTabElement(tabData, index);
+      if (animate) el.classList.add("opening");
+      const sibling = tabsEl.querySelector(`.tab[data-index="${index}"]`);
+      if (sibling) tabsEl.insertBefore(el, sibling);
+      else tabsEl.appendChild(el);
+
+      data.splice(index, 0, tabData);
+      refreshTabIndexes();
+      syncTabWidths();
+
+      if (animate) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.classList.remove("opening");
+          });
+        });
+      }
+    }
+
+    // ---- Bridge wiring ----
+
+    function applyTabState(idx, props) {
+      if (idx < 0 || idx >= data.length) return;
+      const t = data[idx];
+      if (typeof props.title === "string") t.title = props.title;
+      if (typeof props.iconUrl === "string") t.iconUrl = props.iconUrl;
+      if (typeof props.isLoading === "boolean") t.isLoading = props.isLoading;
+      const el = tabsEl.querySelector(`.tab[data-index="${idx}"]`);
+      if (el) updateTabContent(el, t);
+    }
+
+    function setActiveFromBridge(idx) {
+      if (idx === activeIndex) return;
+      if (idx < 0 || idx >= data.length) return;
+      activeIndex = idx;
+      tabsEl.querySelectorAll(".tab").forEach((tab, i) => {
+        tab.classList.toggle("active", i === idx);
+      });
+      morphActivePill(280);
+    }
+
+    function setUrlFromBridge(url) {
+      if (document.activeElement === urlInput) return;
+      lastUrl = url || "";
+      urlInput.value = lastUrl;
+    }
+
+    function setNavStateFromBridge(canBack, canForward, loading) {
+      backBtn.disabled = !canBack;
+      forwardBtn.disabled = !canForward;
+      isLoading = !!loading;
+      const path = isLoading
+        ? '<path d="M7 7l10 10M17 7 7 17" stroke-width="2" stroke-linecap="round" />'
+        : '<path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />';
+      reloadBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none">${path}</svg>`;
+      reloadBtn.title = isLoading ? "Stop" : "Reload";
+    }
+
+    function setInitialState(state) {
+      while (data.length) data.pop();
+      tabsEl.querySelectorAll(".tab").forEach(t => t.remove());
+      const list = state.tabs || [];
+      list.forEach(t => data.push({ title: t.title || "New tab", iconUrl: t.iconUrl || "", isLoading: !!t.isLoading }));
+      activeIndex = typeof state.activeIndex === "number" ? state.activeIndex : -1;
+      data.forEach((t, i) => {
+        const el = createTabElement(t, i);
+        tabsEl.appendChild(el);
+      });
+      syncTabWidths();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(snapActivePill);
+      });
+      if (typeof state.url === "string") setUrlFromBridge(state.url);
+      setNavStateFromBridge(!!state.canBack, !!state.canForward, !!state.isLoading);
+    }
+
+    // Wire UI events
+    newTabBtn.addEventListener("click", () => {
+      if (bridge) bridge.requestNewTab();
+    });
+    backBtn.addEventListener("click", () => { if (bridge) bridge.requestBack(); });
+    forwardBtn.addEventListener("click", () => { if (bridge) bridge.requestForward(); });
+    reloadBtn.addEventListener("click", () => {
+      if (!bridge) return;
+      if (isLoading) bridge.requestStop();
+      else bridge.requestReload();
+    });
+    urlInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (bridge) bridge.requestNavigate(urlInput.value);
+        urlInput.blur();
+      } else if (e.key === "Escape") {
+        urlInput.value = lastUrl;
+        urlInput.blur();
+      }
+    });
+    urlInput.addEventListener("focus", () => urlInput.select());
+    profileBtn.addEventListener("click", () => { if (bridge) bridge.requestProfile(); });
+    menuBtn.addEventListener("click", () => { if (bridge) bridge.requestMenu(); });
+    winMin.addEventListener("click", () => { if (bridge) bridge.requestMinimize(); });
+    winMax.addEventListener("click", () => { if (bridge) bridge.requestToggleMaximize(); });
+    winClose.addEventListener("click", () => { if (bridge) bridge.requestClose(); });
+
+    let resizeRaf = null;
+    window.addEventListener("resize", () => {
+      if (resizeRaf !== null) return;
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = null;
+        syncTabWidths();
+        snapActivePill();
+      });
+    });
+
+    new QWebChannel(qt.webChannelTransport, channel => {
+      bridge = channel.objects.chromeBridge;
+
+      bridge.tabAdded.connect((idx, tabProps, animate) => {
+        const tabData = {
+          title: (tabProps && tabProps.title) || "New tab",
+          iconUrl: (tabProps && tabProps.iconUrl) || "",
+          isLoading: !!(tabProps && tabProps.isLoading),
+        };
+        openTabAt(idx, tabData, !!animate);
+      });
+      bridge.tabRemoved.connect(idx => {
+        const el = tabsEl.querySelector(`.tab[data-index="${idx}"]`);
+        if (!el) return;
+        closeTabAt(idx, el, /*notify=*/false);
+      });
+      bridge.tabUpdated.connect((idx, props) => applyTabState(idx, props || {}));
+      bridge.activeChanged.connect(idx => setActiveFromBridge(idx));
+      bridge.urlChanged.connect(url => setUrlFromBridge(url));
+      bridge.navStateChanged.connect((canBack, canForward, loading) =>
+        setNavStateFromBridge(canBack, canForward, loading));
+      bridge.initialStateChanged.connect(state => setInitialState(state));
+      bridge.focusAddressBar.connect(() => {
+        urlInput.focus();
+        urlInput.select();
+      });
+      bridge.maximizedChanged.connect(maximized => {
+        winMax.title = maximized ? "Restore" : "Maximize";
+        const inner = maximized
+          ? '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="7" width="10" height="10" rx="1.5" stroke-width="1.6"/><rect x="9" y="5" width="10" height="10" rx="1.5" stroke-width="1.6"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none"><rect x="7" y="7" width="10" height="10" rx="1.5" stroke-width="1.8"/></svg>';
+        winMax.innerHTML = inner;
+      });
+
+      bridge.ready();
+    });
+
+    // Window drag region: mousedown on tab-strip background triggers system move.
+    const tabStripEl = document.getElementById("tabStrip");
+    function isDraggableEmptySpace(target) {
+      // We treat anything that's NOT inside an interactive element as draggable.
+      return !target.closest(".tab") &&
+             !target.closest(".new-tab") &&
+             !target.closest(".menu") &&
+             !target.closest(".window-controls");
+    }
+    tabStripEl.addEventListener("mousedown", event => {
+      if (event.button !== 0) return;
+      if (!isDraggableEmptySpace(event.target)) return;
+      if (bridge) bridge.requestStartSystemMove();
+    });
+    tabStripEl.addEventListener("dblclick", event => {
+      if (!isDraggableEmptySpace(event.target)) return;
+      if (bridge) bridge.requestSystemDoubleClick();
+    });
+  </script>
+</body>
+</html>

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QIcon>
 #include <QUrl>
 #include <QWidget>
 
-class QAction;
+#include <QIcon>
+
 class QLabel;
 class QLineEdit;
 class QProgressBar;
@@ -27,6 +27,8 @@ public:
     QUrl url() const;
     bool isLoading() const;
     bool isRestorableUrl() const;
+
+    void setChromeWidgetsVisible(bool visible);
 
 public slots:
     void focusAddressBar();
@@ -53,13 +55,15 @@ private:
     void updateAddressLockVisible();
 
     QWebEngineView *webView_;
+    QWidget *toolbar_;
+    QWidget *addressBox_;
+    QLabel *lockIcon_;
     QLineEdit *addressBar_;
     QProgressBar *progressBar_;
     QToolButton *backButton_;
     QToolButton *forwardButton_;
     QToolButton *reloadButton_;
     QToolButton *primaryAction_;
-    QAction *lockAction_;
     QIcon currentIcon_;
     QString currentTitle_;
     bool isLoading_;
