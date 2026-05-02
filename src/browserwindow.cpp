@@ -1,10 +1,14 @@
 #include "browserwindow.h"
 
 #include "browsertab.h"
+#include "iconutils.h"
 #include "settingsdialog.h"
+#include "thememanager.h"
 
 #include <QCloseEvent>
+#include <QColor>
 #include <QDir>
+#include <QEvent>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QKeySequence>
@@ -13,6 +17,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QPushButton>
 #include <QShortcut>
 #include <QSplitter>
@@ -28,6 +33,7 @@
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
 #include <QWebEngineView>
+#include <QWindow>
 
 BrowserWindow::BrowserWindow(QWidget *parent)
     : BrowserWindow(false, parent)
@@ -55,11 +61,15 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
             QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
     }
 
+    setWindowFlag(Qt::FramelessWindowHint, true);
+    setAttribute(Qt::WA_TranslucentBackground, false);
+
     tabs_->setDocumentMode(true);
     tabs_->setMovable(true);
     tabs_->setTabsClosable(true);
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->tabBar()->setExpanding(false);
+    tabs_->tabBar()->installEventFilter(this);
 
     setupDownloads();
     setupFindBar();
@@ -80,23 +90,66 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     splitter->setSizes({0, 1280});
     setCentralWidget(splitter);
 
-    auto *newTabButton = new QToolButton(this);
-    newTabButton->setText("+");
-    newTabButton->setToolTip("New tab");
-    newTabButton->setAutoRaise(true);
-    newTabButton->setCursor(Qt::PointingHandCursor);
-    tabs_->setCornerWidget(newTabButton, Qt::TopRightCorner);
+    newTabButton_ = new QToolButton(this);
+    newTabButton_->setToolTip(QStringLiteral("New tab"));
+    newTabButton_->setAutoRaise(true);
+    newTabButton_->setCursor(Qt::PointingHandCursor);
+    newTabButton_->setIconSize(QSize(18, 18));
 
-    auto *menuButton = new QToolButton(this);
-    menuButton->setText(QStringLiteral("\u2630"));
-    menuButton->setToolTip(QStringLiteral("Menu"));
-    menuButton->setAutoRaise(true);
-    menuButton->setCursor(Qt::PointingHandCursor);
-    menuButton->setPopupMode(QToolButton::InstantPopup);
-    auto *menu = new QMenu(menuButton);
+    minButton_ = new QToolButton(this);
+    minButton_->setToolTip(QStringLiteral("Minimize"));
+    minButton_->setAutoRaise(true);
+    minButton_->setCursor(Qt::PointingHandCursor);
+    minButton_->setIconSize(QSize(18, 18));
+
+    maxButton_ = new QToolButton(this);
+    maxButton_->setToolTip(QStringLiteral("Maximize"));
+    maxButton_->setAutoRaise(true);
+    maxButton_->setCursor(Qt::PointingHandCursor);
+    maxButton_->setIconSize(QSize(18, 18));
+
+    closeButton_ = new QToolButton(this);
+    closeButton_->setObjectName(QStringLiteral("windowClose"));
+    closeButton_->setToolTip(QStringLiteral("Close"));
+    closeButton_->setAutoRaise(true);
+    closeButton_->setCursor(Qt::PointingHandCursor);
+    closeButton_->setIconSize(QSize(18, 18));
+
+    auto *rightCorner = new QWidget(this);
+    auto *rightLayoutCorner = new QHBoxLayout(rightCorner);
+    rightLayoutCorner->setContentsMargins(0, 0, 8, 0);
+    rightLayoutCorner->setSpacing(2);
+    rightLayoutCorner->addWidget(newTabButton_);
+    rightLayoutCorner->addSpacing(8);
+    rightLayoutCorner->addWidget(minButton_);
+    rightLayoutCorner->addWidget(maxButton_);
+    rightLayoutCorner->addWidget(closeButton_);
+    tabs_->setCornerWidget(rightCorner, Qt::TopRightCorner);
+
+    connect(minButton_, &QToolButton::clicked, this, &BrowserWindow::showMinimized);
+    connect(maxButton_, &QToolButton::clicked, this, [this] {
+        if (isMaximized()) {
+            showNormal();
+        } else {
+            showMaximized();
+        }
+    });
+    connect(closeButton_, &QToolButton::clicked, this, &BrowserWindow::close);
+
+    menuButton_ = new QToolButton(this);
+    menuButton_->setToolTip(QStringLiteral("Menu"));
+    menuButton_->setAutoRaise(true);
+    menuButton_->setCursor(Qt::PointingHandCursor);
+    menuButton_->setIconSize(QSize(20, 20));
+    menuButton_->setPopupMode(QToolButton::InstantPopup);
+    auto *menu = new QMenu(menuButton_);
     auto *newPrivateAction = menu->addAction(QStringLiteral("New private window"));
     newPrivateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N));
     connect(newPrivateAction, &QAction::triggered, this, &BrowserWindow::openPrivateWindow);
+    menu->addSeparator();
+    auto *toggleThemeAction = menu->addAction(QStringLiteral("Toggle light theme"));
+    toggleThemeAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+    connect(toggleThemeAction, &QAction::triggered, ThemeManager::instance(), &ThemeManager::toggle);
     menu->addSeparator();
     auto *settingsAction = menu->addAction(QStringLiteral("Settings\u2026"));
     settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
@@ -112,10 +165,22 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
         bookmarksAction->setVisible(false);
         historyAction->setVisible(false);
     }
-    menuButton->setMenu(menu);
-    tabs_->setCornerWidget(menuButton, Qt::TopLeftCorner);
+    menuButton_->setMenu(menu);
+    auto *leftCorner = new QWidget(this);
+    auto *leftLayoutCorner = new QHBoxLayout(leftCorner);
+    leftLayoutCorner->setContentsMargins(8, 0, 0, 0);
+    leftLayoutCorner->setSpacing(2);
+    leftLayoutCorner->addWidget(menuButton_);
+    tabs_->setCornerWidget(leftCorner, Qt::TopLeftCorner);
 
-    connect(newTabButton, &QToolButton::clicked, this, &BrowserWindow::addTab);
+    refreshChromeIcons();
+    updateMaximizeIcon();
+    connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
+            [this](bool) { refreshChromeIcons(); });
+
+    connect(newTabButton_, &QToolButton::clicked, this, &BrowserWindow::addTab);
+    new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L), this,
+                  [] { ThemeManager::instance()->toggle(); });
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
     connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
 
@@ -170,6 +235,9 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     if (isPrivate_) {
         setStyleSheet(QStringLiteral(
             "QMainWindow { background: #1a1230; } "
+            "QTabWidget::pane { background: #1a1230; } "
+            "QTabBar { background: #1a1230; } "
+            "QTabWidget::corner { background: #1a1230; } "
             "QStatusBar { background: #2a1a4a; color: #d8c8ff; }"));
         statusBar()->showMessage(QStringLiteral(
             "Private mode \u2014 history, cookies and downloads are not saved."));
@@ -178,6 +246,74 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
         loadHistory();
     }
     restoreSession();
+}
+
+bool BrowserWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == tabs_->tabBar()) {
+        if (event->type() == QEvent::MouseButtonPress) {
+            auto *me = static_cast<QMouseEvent *>(event);
+            if (me->button() == Qt::LeftButton) {
+                const int idx = tabs_->tabBar()->tabAt(me->pos());
+                if (idx == -1 && windowHandle()) {
+                    windowHandle()->startSystemMove();
+                    return true;
+                }
+            }
+        } else if (event->type() == QEvent::MouseButtonDblClick) {
+            auto *me = static_cast<QMouseEvent *>(event);
+            if (tabs_->tabBar()->tabAt(me->pos()) == -1) {
+                if (isMaximized()) {
+                    showNormal();
+                } else {
+                    showMaximized();
+                }
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void BrowserWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
+        updateMaximizeIcon();
+    }
+}
+
+void BrowserWindow::refreshChromeIcons()
+{
+    const bool light = ThemeManager::instance()->isLight();
+    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    if (menuButton_) {
+        menuButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/menu.svg"), iconColor));
+    }
+    if (newTabButton_) {
+        newTabButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/plus.svg"), iconColor));
+    }
+    if (minButton_) {
+        minButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-min.svg"), iconColor));
+    }
+    if (closeButton_) {
+        closeButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-close.svg"), iconColor));
+    }
+    updateMaximizeIcon();
+}
+
+void BrowserWindow::updateMaximizeIcon()
+{
+    if (!maxButton_) {
+        return;
+    }
+    const bool light = ThemeManager::instance()->isLight();
+    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    const QString resource = isMaximized()
+        ? QStringLiteral(":/assets/window-restore.svg")
+        : QStringLiteral(":/assets/window-max.svg");
+    maxButton_->setIcon(IconUtils::coloredSvg(resource, iconColor));
+    maxButton_->setToolTip(isMaximized() ? QStringLiteral("Restore") : QStringLiteral("Maximize"));
 }
 
 void BrowserWindow::closeEvent(QCloseEvent *event)

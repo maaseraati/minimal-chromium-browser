@@ -4,6 +4,7 @@
 #include <QUrl>
 #include <QWidget>
 
+class QAction;
 class QLabel;
 class QLineEdit;
 class QProgressBar;
@@ -47,6 +48,9 @@ private:
     QString homeHtml() const;
     void setLoading(bool loading, int progress);
     void updateActions();
+    void refreshIcons();
+    void updatePrimaryActionIcon();
+    void updateAddressLockVisible();
 
     QWebEngineView *webView_;
     QLineEdit *addressBar_;
@@ -54,8 +58,8 @@ private:
     QToolButton *backButton_;
     QToolButton *forwardButton_;
     QToolButton *reloadButton_;
-    QToolButton *homeButton_;
-    QPushButton *goButton_;
+    QToolButton *primaryAction_;
+    QAction *lockAction_;
     QIcon currentIcon_;
     QString currentTitle_;
     bool isLoading_;

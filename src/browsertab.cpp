@@ -1,19 +1,23 @@
 #include "browsertab.h"
 
 #include "browserpage.h"
+#include "iconutils.h"
 #include "settingsdialog.h"
+#include "thememanager.h"
 
+#include <QAction>
+#include <QColor>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QKeySequence>
 #include <QLineEdit>
 #include <QProgressBar>
-#include <QPushButton>
 #include <QShortcut>
 #include <QToolButton>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QVBoxLayout>
+#include <QWebChannel>
 #include <QWebEngineHistory>
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
@@ -22,13 +26,13 @@
 namespace {
 constexpr auto kHomeUrl = "morphine://home";
 
-auto makeToolButton(const QString &text, const QString &toolTip) -> QToolButton *
+auto makeToolButton(const QString &toolTip) -> QToolButton *
 {
     auto *button = new QToolButton;
-    button->setText(text);
     button->setToolTip(toolTip);
     button->setAutoRaise(true);
     button->setCursor(Qt::PointingHandCursor);
+    button->setIconSize(QSize(20, 20));
     return button;
 }
 } // namespace
@@ -38,34 +42,44 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
       webView_(new QWebEngineView(this)),
       addressBar_(new QLineEdit(this)),
       progressBar_(new QProgressBar(this)),
-      backButton_(makeToolButton("‹", "Back")),
-      forwardButton_(makeToolButton("›", "Forward")),
-      reloadButton_(makeToolButton("⟳", "Reload")),
-      homeButton_(makeToolButton("⌂", "Home")),
-      goButton_(new QPushButton("Go", this)),
+      backButton_(makeToolButton("Back")),
+      forwardButton_(makeToolButton("Forward")),
+      reloadButton_(makeToolButton("Reload")),
+      primaryAction_(makeToolButton("Go")),
+      lockAction_(nullptr),
       currentTitle_("Morphine"),
       isLoading_(false)
 {
     installPage(page ? page : new BrowserPage(profile, webView_));
 
-    addressBar_->setClearButtonEnabled(true);
+    addressBar_->setClearButtonEnabled(false);
     addressBar_->setPlaceholderText("Enter URL or search Google");
+    addressBar_->setMinimumHeight(36);
+    lockAction_ = addressBar_->addAction(QIcon(), QLineEdit::LeadingPosition);
+    updateAddressLockVisible();
 
     progressBar_->setTextVisible(false);
     progressBar_->setMaximumHeight(2);
     progressBar_->hide();
 
-    goButton_->setCursor(Qt::PointingHandCursor);
+    primaryAction_->setObjectName(QStringLiteral("primaryAction"));
+    primaryAction_->setIconSize(QSize(20, 20));
+    primaryAction_->setFixedSize(QSize(36, 36));
+
+    refreshIcons();
+    connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
+            [this](bool) { refreshIcons(); });
 
     auto *toolbar = new QHBoxLayout;
-    toolbar->setContentsMargins(10, 8, 10, 6);
-    toolbar->setSpacing(8);
+    toolbar->setContentsMargins(12, 8, 12, 8);
+    toolbar->setSpacing(4);
     toolbar->addWidget(backButton_);
     toolbar->addWidget(forwardButton_);
     toolbar->addWidget(reloadButton_);
-    toolbar->addWidget(homeButton_);
+    toolbar->addSpacing(4);
     toolbar->addWidget(addressBar_, 1);
-    toolbar->addWidget(goButton_);
+    toolbar->addSpacing(4);
+    toolbar->addWidget(primaryAction_);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -73,6 +87,10 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
     layout->addLayout(toolbar);
     layout->addWidget(progressBar_);
     layout->addWidget(webView_, 1);
+
+    auto *channel = new QWebChannel(this);
+    channel->registerObject(QStringLiteral("morphineTheme"), ThemeManager::instance());
+    webView_->page()->setWebChannel(channel);
 
     connect(backButton_, &QToolButton::clicked, webView_, &QWebEngineView::back);
     connect(forwardButton_, &QToolButton::clicked, webView_, &QWebEngineView::forward);
@@ -83,8 +101,7 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
             webView_->reload();
         }
     });
-    connect(homeButton_, &QToolButton::clicked, this, &BrowserTab::loadHome);
-    connect(goButton_, &QPushButton::clicked, this, [this] {
+    connect(primaryAction_, &QToolButton::clicked, this, [this] {
         loadInput(addressBar_->text());
     });
     connect(addressBar_, &QLineEdit::returnPressed, this, [this] {
@@ -99,6 +116,7 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
         if (url.toString() != kHomeUrl) {
             addressBar_->setText(url.toString());
         }
+        updateAddressLockVisible();
         updateActions();
         emit urlChanged(url);
     });
@@ -116,6 +134,7 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
 
     new QShortcut(QKeySequence::Refresh, webView_, SLOT(reload()));
     new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_L), this, SLOT(focusAddressBar()));
+    new QShortcut(QKeySequence(Qt::ALT | Qt::Key_Home), this, SLOT(loadHome()));
 
     loadHome();
 }
@@ -290,7 +309,7 @@ QString BrowserTab::homeHtml() const
       color: var(--on-surface);
       transition: background .4s ease, color .4s ease;
     }
-    .theme-toggle:checked ~ .stage {
+    .stage.light {
       --primary: #4a76b3;
       --on-primary: #ffffff;
       --primary-container: #d8e2ff;
@@ -431,7 +450,7 @@ QString BrowserTab::homeHtml() const
       place-items: center;
       font-size: 14px;
     }
-    .theme-toggle:checked ~ .stage .theme-label::before {
+    .stage.light .theme-label::before {
       transform: translateX(32px);
     }
     .hero {
@@ -589,7 +608,7 @@ QString BrowserTab::homeHtml() const
 </head>
 <body>
   <input class="theme-toggle" id="theme-toggle" type="checkbox" aria-label="Light theme">
-  <div class="stage">
+  <div class="stage" id="stage">
     <div class="wave" aria-hidden="true"></div>
     <span class="star s1" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
     <span class="star s2" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1 C13 8 16 11 23 12 C16 13 13 16 12 23 C11 16 8 13 1 12 C8 11 11 8 12 1 Z"/></svg></span>
@@ -629,6 +648,25 @@ QString BrowserTab::homeHtml() const
       </section>
     </main>
   </div>
+  <script src="qrc:/qtwebchannel/qwebchannel.js"></script>
+  <script>
+    (function() {
+      var stage = document.getElementById('stage');
+      var toggle = document.getElementById('theme-toggle');
+      function applyTheme(light) {
+        stage.classList.toggle('light', !!light);
+        toggle.checked = !!light;
+      }
+      new QWebChannel(qt.webChannelTransport, function(channel) {
+        var bridge = channel.objects.morphineTheme;
+        applyTheme(bridge.light);
+        bridge.lightChanged.connect(function(light) { applyTheme(light); });
+        toggle.addEventListener('change', function(e) {
+          bridge.setLight(e.target.checked);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
 )HTML");
@@ -638,8 +676,39 @@ void BrowserTab::updateActions()
 {
     backButton_->setEnabled(webView_->history()->canGoBack());
     forwardButton_->setEnabled(webView_->history()->canGoForward());
-    reloadButton_->setText(isLoading_ ? QStringLiteral("×") : QStringLiteral("⟳"));
     reloadButton_->setToolTip(isLoading_ ? QStringLiteral("Stop") : QStringLiteral("Reload"));
+    refreshIcons();
+}
+
+void BrowserTab::refreshIcons()
+{
+    const bool light = ThemeManager::instance()->isLight();
+    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    backButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-back.svg"), iconColor));
+    forwardButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-forward.svg"), iconColor));
+    reloadButton_->setIcon(IconUtils::coloredSvg(
+        isLoading_ ? QStringLiteral(":/assets/stop.svg") : QStringLiteral(":/assets/refresh.svg"),
+        iconColor));
+    if (lockAction_) {
+        lockAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/lock.svg"), iconColor, 18));
+    }
+    updatePrimaryActionIcon();
+}
+
+void BrowserTab::updatePrimaryActionIcon()
+{
+    const bool light = ThemeManager::instance()->isLight();
+    const QColor onPrimary(light ? QStringLiteral("#ffffff") : QStringLiteral("#00306e"));
+    primaryAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-go.svg"), onPrimary, 22));
+}
+
+void BrowserTab::updateAddressLockVisible()
+{
+    if (!lockAction_) {
+        return;
+    }
+    const QString scheme = webView_->url().scheme();
+    lockAction_->setVisible(scheme == QStringLiteral("https") || scheme == QStringLiteral("morphine"));
 }
 
 void BrowserTab::setLoading(bool loading, int progress)
