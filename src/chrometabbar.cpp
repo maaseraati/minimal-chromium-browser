@@ -14,6 +14,14 @@
 #include <QStyleOptionTab>
 #include <QVariantAnimation>
 
+namespace {
+constexpr auto kAccent = "#8cb0de";
+constexpr auto kAccentDark = "#5c8ecb";
+constexpr auto kAccentSoft = "#c0d6f4";
+constexpr auto kChromeTop = "#fbfcf4";
+constexpr auto kTabBorder = "#d9e1d4";
+} // namespace
+
 ChromeTabBar::ChromeTabBar(QWidget *parent)
     : QTabBar(parent),
       pillGeometry_(),
@@ -24,15 +32,15 @@ ChromeTabBar::ChromeTabBar(QWidget *parent)
     setDrawBase(false);
     setElideMode(Qt::ElideRight);
     setExpanding(false);
-    setIconSize(QSize(16, 16));
+    setIconSize(QSize(20, 20));
     setMouseTracking(true);
     setMovable(true);
     setTabsClosable(true);
     setUsesScrollButtons(true);
-    setFixedHeight(58);
+    setFixedHeight(66);
     setCursor(Qt::OpenHandCursor);
     setStyleSheet(QStringLiteral("QTabBar::close-button { image: none; width: 0px; height: 0px; }"));
-    selectionAnimation_->setDuration(240);
+    selectionAnimation_->setDuration(260);
     selectionAnimation_->setEasingCurve(QEasingCurve::OutCubic);
 }
 
@@ -122,8 +130,8 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(rect(), chromeBackground());
 
-    const QColor separator(QStringLiteral("#dfe4d6"));
-    painter.setPen(separator);
+    painter.setPen(QColor(QStringLiteral("#dfe4d6")));
+    painter.drawLine(rect().bottomLeft(), rect().bottomRight());
 
     for (int index = 0; index < count(); ++index) {
         if (index == currentIndex()) {
@@ -134,17 +142,17 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
             continue;
         }
         const QRectF rect = pillRectForIndex(index);
-        QColor hoverColor(QStringLiteral("#edf1e2"));
+        QColor hoverColor(QStringLiteral("#edf3fb"));
         hoverColor.setAlphaF(0.86 * hover);
         painter.fillPath(tabPath(rect), hoverColor);
     }
 
     if (currentIndex() >= 0 && !pillGeometry_.isNull()) {
         QLinearGradient gradient(pillGeometry_.topLeft(), pillGeometry_.bottomLeft());
-        gradient.setColorAt(0, QColor(255, 255, 255, 128));
-        gradient.setColorAt(1, QColor(QStringLiteral("#d9e5c9")));
+        gradient.setColorAt(0, QColor(255, 255, 255, 132));
+        gradient.setColorAt(1, QColor(QString::fromLatin1(kAccentSoft)));
         painter.fillPath(tabPath(pillGeometry_), gradient);
-        painter.setPen(QPen(QColor(QStringLiteral("#627748")), 1.5));
+        painter.setPen(QPen(QColor(QString::fromLatin1(kAccentDark)), 1.5));
         painter.drawPath(tabPath(pillGeometry_));
     }
 
@@ -156,15 +164,15 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
         const QRect tabBounds = tabRect(index);
         const QRectF tabPaintRect = pillRectForIndex(index);
         if (index != currentIndex()) {
-            painter.setPen(QPen(QColor(QStringLiteral("#e1e5d8")), 1));
+            painter.setPen(QPen(QColor(QString::fromLatin1(kTabBorder)), 1));
             painter.fillPath(tabPath(tabPaintRect), tabColor(index, false));
             painter.drawPath(tabPath(tabPaintRect));
         }
 
-        QRect contentRect = tabBounds.adjusted(18, 8, -36, -6);
+        QRect contentRect = tabBounds.adjusted(18, 11, -36, -11);
         const QIcon icon = tabIcon(index);
         if (!icon.isNull()) {
-            const QSize iconSize(22, 22);
+            const QSize iconSize(20, 20);
             const QRect iconRect(contentRect.left(),
                                  contentRect.center().y() - iconSize.height() / 2,
                                  iconSize.width(),
@@ -181,7 +189,7 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
                               tabBounds.center().y() - 12,
                               24,
                               24);
-        painter.setPen(QPen(QColor(QStringLiteral("#1f241d")), 1.7, Qt::SolidLine, Qt::RoundCap));
+        painter.setPen(QPen(QColor(QStringLiteral("#1f241d")), 1.55, Qt::SolidLine, Qt::RoundCap));
         painter.drawLine(closeRect.center() + QPoint(-4, -4), closeRect.center() + QPoint(4, 4));
         painter.drawLine(closeRect.center() + QPoint(4, -4), closeRect.center() + QPoint(-4, 4));
     }
@@ -198,7 +206,7 @@ void ChromeTabBar::resizeEvent(QResizeEvent *event)
 QSize ChromeTabBar::tabSizeHint(int index) const
 {
     QSize size = QTabBar::tabSizeHint(index);
-    size.setWidth(qRound(310 * revealValue(index)));
+    size.setWidth(qRound(targetTabWidth() * revealValue(index)));
     size.setHeight(44);
     return size;
 }
@@ -235,14 +243,14 @@ void ChromeTabBar::tabRemoved(int index)
 
 QColor ChromeTabBar::chromeBackground() const
 {
-    return QColor(QStringLiteral("#fbfcf4"));
+    return QColor(QString::fromLatin1(kChromeTop));
 }
 
 QColor ChromeTabBar::tabColor(int index, bool selected) const
 {
     Q_UNUSED(index);
     if (selected) {
-        return QColor(QStringLiteral("#d9e5c9"));
+        return QColor(QString::fromLatin1(kAccentSoft));
     }
 
     return QColor(250, 251, 244, 235);
@@ -270,7 +278,18 @@ QRectF ChromeTabBar::pillRectForIndex(int index) const
         return QRectF();
     }
     const QRect rect = tabRect(index);
-    return QRectF(rect.left(), 8, rect.width(), 44).adjusted(0.5, 0.5, -0.5, -0.5);
+    return QRectF(rect.left() + 7, 12, rect.width() - 14, 44).adjusted(0.5, 0.5, -0.5, -0.5);
+}
+
+int ChromeTabBar::targetTabWidth() const
+{
+    const int available = qMax(width(), 1);
+    const int preferred = 326;
+    const int minWidth = 230;
+    if (count() <= 0) {
+        return preferred;
+    }
+    return qBound(minWidth, (available - 54) / count(), preferred);
 }
 
 void ChromeTabBar::animateSelection(int index)
@@ -289,7 +308,7 @@ void ChromeTabBar::animateHover(int index, qreal endValue)
     auto *animation = hoverAnimations_.value(index);
     if (!animation) {
         animation = new QVariantAnimation(this);
-        animation->setDuration(150);
+        animation->setDuration(180);
         animation->setEasingCurve(QEasingCurve::OutCubic);
         connect(animation, &QVariantAnimation::valueChanged, this, [this, index](const QVariant &value) {
             hoverValues_[index] = value.toReal();

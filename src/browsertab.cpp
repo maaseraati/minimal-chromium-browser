@@ -84,7 +84,7 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
     auto *toolbarLayout = new QHBoxLayout(toolbar_);
     toolbar_->setObjectName(QStringLiteral("browserToolbar"));
     toolbar_->setFixedHeight(70);
-    toolbarLayout->setContentsMargins(18, 11, 24, 11);
+    toolbarLayout->setContentsMargins(40, 11, 24, 11);
     toolbarLayout->setSpacing(14);
     toolbarLayout->addWidget(backButton_);
     toolbarLayout->addWidget(forwardButton_);
@@ -706,7 +706,7 @@ void BrowserTab::updateActions()
 void BrowserTab::refreshIcons()
 {
     const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#59604f") : QStringLiteral("#c4c6cf"));
+    const QColor iconColor(light ? QStringLiteral("#5f6a5d") : QStringLiteral("#c4c6cf"));
     backButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-back.svg"), iconColor));
     forwardButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-forward.svg"), iconColor));
     reloadButton_->setIcon(IconUtils::coloredSvg(
@@ -721,7 +721,7 @@ void BrowserTab::refreshIcons()
 void BrowserTab::updatePrimaryActionIcon()
 {
     const bool light = ThemeManager::instance()->isLight();
-    const QColor onPrimary(light ? QStringLiteral("#172011") : QStringLiteral("#00306e"));
+    const QColor onPrimary(light ? QStringLiteral("#0e1b2a") : QStringLiteral("#00306e"));
     primaryAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-go.svg"), onPrimary, 22));
 }
 

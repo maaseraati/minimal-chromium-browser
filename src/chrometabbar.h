@@ -41,6 +41,7 @@ private:
     QColor textColor(int index, bool selected) const;
     QPainterPath tabPath(const QRectF &rect) const;
     QRectF pillRectForIndex(int index) const;
+    int targetTabWidth() const;
     void animateSelection(int index);
     void animateHover(int index, qreal endValue);
     void animateReveal(int index, qreal startValue, qreal endValue, int duration,
