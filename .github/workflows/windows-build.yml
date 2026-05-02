@@ -97,20 +97,18 @@ jobs:
             Sort-Object Length -Descending |
             Select-Object -First 15 FullName, Length
 
-      - name: Pack dist as solid LZMA2 .7z
+      - name: Pack dist as zip
         shell: pwsh
         run: |
-          # 7z ships with windows-latest. Solid LZMA2 + max dictionary beats the
-          # default zip-9 by ~30% on Qt + Chromium binaries.
-          7z a -t7z -m0=lzma2 -mx=9 -ms=on -mfb=273 -md=128m morphine-windows-x64.7z .\dist\* | Out-Null
-          $z = Get-Item morphine-windows-x64.7z
+          Compress-Archive -Path .\dist\* -DestinationPath morphine-windows-x64.zip -CompressionLevel Optimal
+          $z = Get-Item morphine-windows-x64.zip
           "{0:N1} MB packed" -f ($z.Length / 1MB)
 
-      - name: Upload artifact (.7z, no recompression)
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: morphine-windows-x64
-          path: morphine-windows-x64.7z
+          path: morphine-windows-x64.zip
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
