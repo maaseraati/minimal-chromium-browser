@@ -7,10 +7,12 @@
 
 class BrowserTab;
 class ChromeUiBridge;
+class QLabel;
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
 class QMenu;
+class QSvgRenderer;
 class QTabWidget;
 class QToolButton;
 class QWebChannel;
@@ -88,6 +90,8 @@ private:
     QWidget *findBar_;
     QLineEdit *findInput_;
     QToolButton *menuButton_;
+    QWidget *brandIcon_;
+    QSvgRenderer *brandRenderer_;
     QToolButton *newTabButton_;
     QToolButton *minButton_;
     QToolButton *maxButton_;

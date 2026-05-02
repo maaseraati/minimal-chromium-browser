@@ -22,12 +22,14 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
 #include <QShortcut>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStandardPaths>
+#include <QSvgRenderer>
 #include <QStringLiteral>
 #include <QTabBar>
 #include <QTabWidget>
@@ -53,6 +55,30 @@ public:
     using QTabWidget::setTabBar;
 };
 
+class BrandIcon final : public QWidget {
+public:
+    BrandIcon(QWidget *parent, QSvgRenderer *renderer)
+        : QWidget(parent), renderer_(renderer)
+    {
+        setObjectName(QStringLiteral("brandIcon"));
+        setFixedSize(QSize(78, 66));
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        if (renderer_) {
+            renderer_->render(&painter, QRectF(25, 19, 28, 28));
+        }
+    }
+
+private:
+    QSvgRenderer *renderer_;
+};
+
 } // namespace
 
 BrowserWindow::BrowserWindow(QWidget *parent)
@@ -72,6 +98,13 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
       findBar_(new QWidget(this)),
       findInput_(new QLineEdit(this)),
       menuButton_(nullptr),
+      brandIcon_(nullptr),
+      brandRenderer_(new QSvgRenderer(QByteArray(
+          "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
+          "<path fill='#ffffff' d='M20.7 3.3C13.3 3.9 7 7.2 4.2 12.5c-1.5 2.8-1.4 5.7.1 7.3"
+          " 1.1-3.6 3.2-6.6 6.4-8.7-2 2.2-3.3 4.9-3.9 8.1 2.4 1 5.4.2 7.8-2.1"
+          " 3.9-3.8 5.6-8.6 6.1-13.8z'/>"
+          "</svg>"), this)),
       newTabButton_(nullptr),
       minButton_(nullptr),
       maxButton_(nullptr),
@@ -102,6 +135,8 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->tabBar()->setExpanding(false);
     tabs_->tabBar()->installEventFilter(this);
+    tabs_->setObjectName(QStringLiteral("tabStrip"));
+    refreshTabMetrics();
 
     setupDownloads();
     setupFindBar();
@@ -112,11 +147,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(0);
 
-    chromeView_ = new QWebEngineView(rightPane);
-    chromeView_->setFixedHeight(136);
-    chromeView_->setContextMenuPolicy(Qt::PreventContextMenu);
-    chromeView_->setAttribute(Qt::WA_AcceptTouchEvents, false);
-    rightLayout->addWidget(chromeView_, 0);
+    chromeView_ = nullptr;
     rightLayout->addWidget(findBar_);
     rightLayout->addWidget(tabs_, 1);
 
@@ -129,10 +160,11 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     setCentralWidget(splitter);
 
     newTabButton_ = new QToolButton(this);
+    newTabButton_->setObjectName(QStringLiteral("newTabButton"));
     newTabButton_->setToolTip(QStringLiteral("New tab"));
     newTabButton_->setAutoRaise(true);
     newTabButton_->setCursor(Qt::PointingHandCursor);
-    newTabButton_->setIconSize(QSize(17, 17));
+    newTabButton_->setIconSize(QSize(19, 19));
 
     minButton_ = new QToolButton(this);
     minButton_->setToolTip(QStringLiteral("Minimize"));
@@ -156,10 +188,9 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     auto *rightCorner = new QWidget(this);
     rightCorner->setObjectName(QStringLiteral("tabCorner"));
     auto *rightLayoutCorner = new QHBoxLayout(rightCorner);
-    rightLayoutCorner->setContentsMargins(4, 0, 8, 0);
-    rightLayoutCorner->setSpacing(2);
+    rightLayoutCorner->setContentsMargins(12, 0, 18, 0);
+    rightLayoutCorner->setSpacing(22);
     rightLayoutCorner->addWidget(newTabButton_);
-    rightLayoutCorner->addSpacing(8);
     rightLayoutCorner->addWidget(minButton_);
     rightLayoutCorner->addWidget(maxButton_);
     rightLayoutCorner->addWidget(closeButton_);
@@ -176,12 +207,14 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     connect(closeButton_, &QToolButton::clicked, this, &BrowserWindow::close);
 
     menuButton_ = new QToolButton(this);
+    menuButton_->setObjectName(QStringLiteral("menuButton"));
+    brandIcon_ = new BrandIcon(this, brandRenderer_);
     auto *leftCorner = new QWidget(this);
     leftCorner->setObjectName(QStringLiteral("tabCorner"));
     menuButton_->setToolTip(QStringLiteral("Menu"));
     menuButton_->setAutoRaise(true);
     menuButton_->setCursor(Qt::PointingHandCursor);
-    menuButton_->setIconSize(QSize(18, 18));
+    menuButton_->setIconSize(QSize(0, 0));
     menuButton_->setPopupMode(QToolButton::InstantPopup);
     appMenu_ = new QMenu(this);
     auto *newPrivateAction = appMenu_->addAction(QStringLiteral("New private window"));
@@ -208,15 +241,17 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     }
     menuButton_->setMenu(appMenu_);
     auto *leftLayoutCorner = new QHBoxLayout(leftCorner);
-    leftLayoutCorner->setContentsMargins(8, 0, 4, 0);
-    leftLayoutCorner->setSpacing(2);
-    leftLayoutCorner->addWidget(menuButton_);
+    leftLayoutCorner->setContentsMargins(0, 0, 0, 0);
+    leftLayoutCorner->setSpacing(0);
+    leftLayoutCorner->addWidget(brandIcon_);
+    menuButton_->setParent(brandIcon_);
+    menuButton_->setGeometry(0, 0, 78, 66);
+    menuButton_->raise();
     tabs_->setCornerWidget(leftCorner, Qt::TopLeftCorner);
 
     refreshChromeIcons();
     updateMaximizeIcon();
     setupChromeUi();
-    tabs_->tabBar()->hide();
     connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
             [this](bool) { refreshChromeIcons(); });
 
@@ -339,12 +374,16 @@ void BrowserWindow::changeEvent(QEvent *event)
 void BrowserWindow::refreshChromeIcons()
 {
     const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    const QColor iconColor(light ? QStringLiteral("#32372f") : QStringLiteral("#c4c6cf"));
     if (menuButton_) {
-        menuButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/menu.svg"), iconColor));
+        menuButton_->setIcon(QIcon());
+    }
+    if (brandIcon_) {
+        brandIcon_->update();
     }
     if (newTabButton_) {
-        newTabButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/plus.svg"), iconColor));
+        newTabButton_->setIcon(
+            IconUtils::coloredSvg(QStringLiteral(":/assets/plus.svg"), QColor(QStringLiteral("#141a10"))));
     }
     if (minButton_) {
         minButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-min.svg"), iconColor));
@@ -361,7 +400,7 @@ void BrowserWindow::updateMaximizeIcon()
         return;
     }
     const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    const QColor iconColor(light ? QStringLiteral("#32372f") : QStringLiteral("#c4c6cf"));
     const QString resource = isMaximized()
         ? QStringLiteral(":/assets/window-restore.svg")
         : QStringLiteral(":/assets/window-max.svg");
@@ -419,7 +458,7 @@ void BrowserWindow::addTab()
 void BrowserWindow::addTabWithUrl(const QUrl &url)
 {
     auto *tab = new BrowserTab(profile_, nullptr, this);
-    tab->setChromeWidgetsVisible(false);
+    tab->setChromeWidgetsVisible(true);
     wireTab(tab);
 
     const int index = tabs_->addTab(tab, tab->title());
@@ -445,7 +484,7 @@ void BrowserWindow::addTabWithUrl(const QUrl &url)
 void BrowserWindow::addTabWithPage(QWebEnginePage *page)
 {
     auto *tab = new BrowserTab(profile_, page, this);
-    tab->setChromeWidgetsVisible(false);
+    tab->setChromeWidgetsVisible(true);
     wireTab(tab);
 
     const int index = tabs_->addTab(tab, tab->icon(), tab->title());
@@ -466,19 +505,25 @@ void BrowserWindow::closeTab(int index)
         close();
         return;
     }
-
-    QWidget *widget = tabs_->widget(index);
-    tabs_->removeTab(index);
-    widget->deleteLater();
-    refreshTabMetrics();
-    publishTabRemoved(index);
-    publishActiveTab();
-    publishCurrentTabUrl();
-    publishCurrentTabNavState();
-    updateWindowTitle();
-    if (!isPrivate_) {
-        saveSession();
+    const auto removeTab = [this, index] {
+        QWidget *widget = tabs_->widget(index);
+        tabs_->removeTab(index);
+        widget->deleteLater();
+        refreshTabMetrics();
+        publishTabRemoved(index);
+        publishActiveTab();
+        publishCurrentTabUrl();
+        publishCurrentTabNavState();
+        updateWindowTitle();
+        if (!isPrivate_) {
+            saveSession();
+        }
+    };
+    if (auto *chromeTabBar = qobject_cast<ChromeTabBar *>(tabs_->tabBar())) {
+        chromeTabBar->animateTabClose(index, removeTab);
+        return;
     }
+    removeTab();
 }
 
 void BrowserWindow::hideFindBar()
@@ -774,9 +819,9 @@ void BrowserWindow::showSidePanel(int pageIndex)
 
 void BrowserWindow::refreshTabMetrics()
 {
-    tabs_->tabBar()->setFixedHeight(40);
+    tabs_->tabBar()->setFixedHeight(66);
     tabs_->tabBar()->setUsesScrollButtons(true);
-    tabs_->tabBar()->setIconSize(QSize(16, 16));
+    tabs_->tabBar()->setIconSize(QSize(20, 20));
 }
 
 void BrowserWindow::updateTabChrome(BrowserTab *tab)
