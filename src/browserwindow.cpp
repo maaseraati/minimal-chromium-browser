@@ -128,6 +128,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     closeButton_->setIconSize(QSize(16, 16));
 
     auto *rightCorner = new QWidget(this);
+    rightCorner->setObjectName(QStringLiteral("tabCorner"));
     auto *rightLayoutCorner = new QHBoxLayout(rightCorner);
     rightLayoutCorner->setContentsMargins(4, 0, 8, 0);
     rightLayoutCorner->setSpacing(2);
@@ -149,6 +150,8 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     connect(closeButton_, &QToolButton::clicked, this, &BrowserWindow::close);
 
     menuButton_ = new QToolButton(this);
+    auto *leftCorner = new QWidget(this);
+    leftCorner->setObjectName(QStringLiteral("tabCorner"));
     menuButton_->setToolTip(QStringLiteral("Menu"));
     menuButton_->setAutoRaise(true);
     menuButton_->setCursor(Qt::PointingHandCursor);
@@ -178,7 +181,6 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
         historyAction->setVisible(false);
     }
     menuButton_->setMenu(menu);
-    auto *leftCorner = new QWidget(this);
     auto *leftLayoutCorner = new QHBoxLayout(leftCorner);
     leftLayoutCorner->setContentsMargins(8, 0, 4, 0);
     leftLayoutCorner->setSpacing(2);

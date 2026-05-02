@@ -24,6 +24,8 @@ protected:
     void leaveEvent(QEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void tabLayoutChange() override;
     void tabInserted(int index) override;
     void tabRemoved(int index) override;
 

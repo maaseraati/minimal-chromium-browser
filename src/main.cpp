@@ -43,7 +43,7 @@ QTabBar {
 
 QTabBar::tab {
     background: transparent;
-    color: transparent;
+    color: #d7dce5;
     padding: 8px 34px 8px 14px;
     margin: 0;
     min-width: 160px;
@@ -71,6 +71,14 @@ QTabBar::close-button:hover {
 }
 
 QTabWidget::corner { background: #11151d; }
+
+QTabWidget > QWidget {
+    background: #11151d;
+}
+
+QWidget#tabCorner {
+    background: #11151d;
+}
 
 QToolButton {
     background: transparent;
@@ -242,7 +250,7 @@ QTabBar {
 
 QTabBar::tab {
     background: transparent;
-    color: transparent;
+    color: #3c4043;
     padding: 8px 34px 8px 14px;
     margin: 0;
     min-width: 160px;
@@ -270,6 +278,14 @@ QTabBar::close-button:hover {
 }
 
 QTabWidget::corner { background: #dfe3ea; }
+
+QTabWidget > QWidget {
+    background: #dfe3ea;
+}
+
+QWidget#tabCorner {
+    background: #dfe3ea;
+}
 
 QToolButton {
     background: transparent;

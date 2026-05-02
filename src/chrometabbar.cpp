@@ -3,6 +3,7 @@
 #include "thememanager.h"
 
 #include <QEnterEvent>
+#include <QFontMetrics>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -26,7 +27,7 @@ ChromeTabBar::ChromeTabBar(QWidget *parent)
     setTabsClosable(true);
     setUsesScrollButtons(true);
     setFixedHeight(40);
-    selectionAnimation_->setDuration(170);
+    selectionAnimation_->setDuration(210);
     selectionAnimation_->setEasingCurve(QEasingCurve::OutCubic);
 }
 
@@ -93,20 +94,8 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.fillRect(rect(), chromeBackground());
 
-    for (int index = 0; index < count(); ++index) {
-        if (index != currentIndex()) {
-            const QRectF rect = tabRect(index).adjusted(0, 5, 0, 0);
-            painter.fillPath(tabPath(rect), tabColor(index, false));
-        }
-    }
-
-    if (currentIndex() >= 0) {
-        const QRectF selectedRect(selectionOffset_, 0, tabRect(currentIndex()).width(), height());
-        painter.fillPath(tabPath(selectedRect.adjusted(0, 4, 0, 1)), tabColor(currentIndex(), true));
-    }
-
     const QColor separator(ThemeManager::instance()->isLight()
-        ? QColor(QStringLiteral("#d7dbe4"))
+        ? QColor(QStringLiteral("#c7cbd3"))
         : QColor(QStringLiteral("#2a2f3a")));
     painter.setPen(separator);
     for (int index = 1; index < count(); ++index) {
@@ -118,17 +107,55 @@ void ChromeTabBar::paintEvent(QPaintEvent *event)
     }
 
     for (int index = 0; index < count(); ++index) {
-        QStyleOptionTab option;
-        initStyleOption(&option, index);
-        option.shape = QTabBar::RoundedNorth;
-        option.state &= ~QStyle::State_Selected;
         if (index == currentIndex()) {
-            option.state |= QStyle::State_Selected;
+            continue;
         }
-        option.rect = tabRect(index).adjusted(12, 4, -26, 0);
-        option.palette.setColor(QPalette::WindowText, textColor(index, index == currentIndex()));
-        option.palette.setColor(QPalette::Text, textColor(index, index == currentIndex()));
-        style()->drawControl(QStyle::CE_TabBarTabLabel, &option, &painter, this);
+        const qreal hover = hoverValue(index);
+        if (hover <= 0) {
+            continue;
+        }
+        const QRectF rect = tabRect(index).adjusted(2, 5, -2, 2);
+        painter.fillPath(tabPath(rect), tabColor(index, false));
+    }
+
+    if (currentIndex() >= 0) {
+        const QRect currentRect = tabRect(currentIndex());
+        const QRectF selectedRect(selectionOffset_, 0, currentRect.width(), height());
+        painter.fillPath(tabPath(selectedRect.adjusted(0, 4, 0, 1)), tabColor(currentIndex(), true));
+    }
+
+    for (int index = 0; index < count(); ++index) {
+        QRect contentRect = tabRect(index).adjusted(14, 5, -34, -4);
+        const QIcon icon = tabIcon(index);
+        if (!icon.isNull()) {
+            const QSize iconSize(16, 16);
+            const QRect iconRect(contentRect.left(),
+                                 contentRect.center().y() - iconSize.height() / 2,
+                                 iconSize.width(),
+                                 iconSize.height());
+            icon.paint(&painter, iconRect);
+            contentRect.setLeft(iconRect.right() + 8);
+        }
+
+        painter.setPen(textColor(index, index == currentIndex()));
+        const QString text = fontMetrics().elidedText(tabText(index), Qt::ElideRight, contentRect.width());
+        painter.drawText(contentRect, Qt::AlignVCenter | Qt::AlignLeft, text);
+    }
+}
+
+void ChromeTabBar::resizeEvent(QResizeEvent *event)
+{
+    QTabBar::resizeEvent(event);
+    if (!selectionAnimation_->state()) {
+        setSelectionOffset(currentIndex() >= 0 ? tabRect(currentIndex()).x() : 0);
+    }
+}
+
+void ChromeTabBar::tabLayoutChange()
+{
+    QTabBar::tabLayoutChange();
+    if (!selectionAnimation_->state()) {
+        setSelectionOffset(currentIndex() >= 0 ? tabRect(currentIndex()).x() : 0);
     }
 }
 
@@ -150,7 +177,7 @@ void ChromeTabBar::tabRemoved(int index)
 QColor ChromeTabBar::chromeBackground() const
 {
     return ThemeManager::instance()->isLight()
-        ? QColor(QStringLiteral("#dee1e6"))
+        ? QColor(QStringLiteral("#dfe3ea"))
         : QColor(QStringLiteral("#11151d"));
 }
 
@@ -158,11 +185,11 @@ QColor ChromeTabBar::tabColor(int index, bool selected) const
 {
     const bool light = ThemeManager::instance()->isLight();
     if (selected) {
-        return light ? QColor(QStringLiteral("#f8fafd")) : QColor(QStringLiteral("#1f232d"));
+        return light ? QColor(QStringLiteral("#f8fafd")) : QColor(QStringLiteral("#20242e"));
     }
 
     const qreal hover = hoverValue(index);
-    const QColor base = light ? QColor(QStringLiteral("#dee1e6")) : QColor(QStringLiteral("#11151d"));
+    const QColor base = light ? QColor(QStringLiteral("#dfe3ea")) : QColor(QStringLiteral("#11151d"));
     const QColor hoverColor = light ? QColor(QStringLiteral("#edf0f5")) : QColor(QStringLiteral("#1a1f29"));
     return QColor::fromRgbF(
         base.redF() + (hoverColor.redF() - base.redF()) * hover,
@@ -208,7 +235,7 @@ void ChromeTabBar::animateHover(int index, qreal endValue)
     auto *animation = hoverAnimations_.value(index);
     if (!animation) {
         animation = new QVariantAnimation(this);
-        animation->setDuration(120);
+        animation->setDuration(150);
         animation->setEasingCurve(QEasingCurve::OutCubic);
         connect(animation, &QVariantAnimation::valueChanged, this, [this, index](const QVariant &value) {
             hoverValues_[index] = value.toReal();
