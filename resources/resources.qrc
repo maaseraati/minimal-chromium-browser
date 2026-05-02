@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/assets">
+        <file>morphine-logo.png</file>
+        <file>close.svg</file>
+        <file>close-hover.svg</file>
+        <file>close-light.svg</file>
+        <file>close-light-hover.svg</file>
+        <file>arrow-back.svg</file>
+        <file>arrow-forward.svg</file>
+        <file>refresh.svg</file>
+        <file>lock.svg</file>
+        <file>menu.svg</file>
+        <file>plus.svg</file>
+        <file>window-min.svg</file>
+        <file>window-max.svg</file>
+        <file>window-restore.svg</file>
+        <file>window-close.svg</file>
+        <file>arrow-go.svg</file>
+        <file>stop.svg</file>
+        <file>more-vert.svg</file>
+    </qresource>
+    <qresource prefix="/qtwebchannel">
+        <file>qwebchannel.js</file>
+    </qresource>
+</RCC>

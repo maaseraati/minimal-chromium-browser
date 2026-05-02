@@ -10,9 +10,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets WebEngineWidgets)
+find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets WebEngineWidgets WebChannel Svg)
 
 qt_add_executable(morphine
+    resources/resources.qrc
     src/main.cpp
     src/browserpage.cpp
     src/browserpage.h
@@ -20,14 +21,20 @@ qt_add_executable(morphine
     src/browserwindow.h
     src/browsertab.cpp
     src/browsertab.h
+    src/iconutils.cpp
+    src/iconutils.h
     src/settingsdialog.cpp
     src/settingsdialog.h
+    src/thememanager.cpp
+    src/thememanager.h
 )
 
 target_link_libraries(morphine
     PRIVATE
         Qt6::Widgets
         Qt6::WebEngineWidgets
+        Qt6::WebChannel
+        Qt6::Svg
 )
 
 if(APPLE)

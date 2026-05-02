@@ -9,6 +9,7 @@ class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
 class QTabWidget;
+class QToolButton;
 class QWebEnginePage;
 class QWebEngineProfile;
 
@@ -17,15 +18,21 @@ class BrowserWindow final : public QMainWindow {
 
 public:
     explicit BrowserWindow(QWidget *parent = nullptr);
+    explicit BrowserWindow(bool isPrivate, QWidget *parent = nullptr);
+
+    bool isPrivate() const { return isPrivate_; }
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    void changeEvent(QEvent *event) override;
 
 private slots:
     void addTab();
     void addBookmark();
     void closeTab(int index);
     void hideFindBar();
+    void openPrivateWindow();
     void openSelectedListItem(QListWidgetItem *item);
     void showFindBar();
     void showSettings();
@@ -53,6 +60,8 @@ private:
     void showSidePanel(int pageIndex);
     void updateTabChrome(BrowserTab *tab);
     void wireTab(BrowserTab *tab);
+    void refreshChromeIcons();
+    void updateMaximizeIcon();
 
     QTabWidget *tabs_;
     QWebEngineProfile *profile_;
@@ -62,4 +71,10 @@ private:
     QTabWidget *sidePanel_;
     QWidget *findBar_;
     QLineEdit *findInput_;
+    QToolButton *menuButton_;
+    QToolButton *newTabButton_;
+    QToolButton *minButton_;
+    QToolButton *maxButton_;
+    QToolButton *closeButton_;
+    bool isPrivate_;
 };
