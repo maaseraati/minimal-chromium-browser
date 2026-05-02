@@ -28,6 +28,8 @@ public:
     bool isLoading() const;
     bool isRestorableUrl() const;
 
+    void setChromeWidgetsVisible(bool visible);
+
 public slots:
     void focusAddressBar();
     void findInPage(const QString &text, bool backwards = false);
@@ -53,6 +55,7 @@ private:
     void updateAddressLockVisible();
 
     QWebEngineView *webView_;
+    QWidget *toolbar_;
     QWidget *addressBox_;
     QLabel *lockIcon_;
     QLineEdit *addressBar_;

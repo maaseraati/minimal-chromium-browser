@@ -3,15 +3,20 @@
 #include <QMainWindow>
 #include <QSettings>
 #include <QUrl>
+#include <QVariantMap>
 
 class BrowserTab;
+class ChromeUiBridge;
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
+class QMenu;
 class QTabWidget;
 class QToolButton;
+class QWebChannel;
 class QWebEnginePage;
 class QWebEngineProfile;
+class QWebEngineView;
 
 class BrowserWindow final : public QMainWindow {
     Q_OBJECT
@@ -49,6 +54,16 @@ private:
     BrowserTab *currentTab() const;
     BrowserTab *tabAt(int index) const;
     void cycleTabs(int delta);
+    void setupChromeUi();
+    void publishInitialChromeState();
+    QVariantMap tabPropsFor(BrowserTab *tab) const;
+    void publishTabAdded(int index, bool animate);
+    void publishTabRemoved(int index);
+    void publishTabUpdated(BrowserTab *tab);
+    void publishActiveTab();
+    void publishCurrentTabUrl();
+    void publishCurrentTabNavState();
+    QString iconToDataUrl(const QIcon &icon) const;
     void loadBookmarks();
     void loadHistory();
     void restoreSession();
@@ -77,5 +92,10 @@ private:
     QToolButton *minButton_;
     QToolButton *maxButton_;
     QToolButton *closeButton_;
+    QMenu *appMenu_;
+    QWebEngineView *chromeView_;
+    QWebChannel *chromeChannel_;
+    ChromeUiBridge *chromeBridge_;
+    bool chromeReady_;
     bool isPrivate_;
 };

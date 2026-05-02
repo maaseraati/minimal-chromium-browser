@@ -40,6 +40,7 @@ auto makeToolButton(const QString &toolTip) -> QToolButton *
 BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget *parent)
     : QWidget(parent),
       webView_(new QWebEngineView(this)),
+      toolbar_(new QWidget(this)),
       addressBox_(new QWidget(this)),
       lockIcon_(new QLabel(addressBox_)),
       addressBar_(new QLineEdit(this)),
@@ -80,21 +81,21 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
     connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
             [this](bool) { refreshIcons(); });
 
-    auto *toolbar = new QHBoxLayout;
-    toolbar->setContentsMargins(12, 8, 12, 8);
-    toolbar->setSpacing(6);
-    toolbar->addWidget(backButton_);
-    toolbar->addWidget(forwardButton_);
-    toolbar->addWidget(reloadButton_);
-    toolbar->addSpacing(2);
-    toolbar->addWidget(addressBox_, 1);
-    toolbar->addSpacing(2);
-    toolbar->addWidget(primaryAction_);
+    auto *toolbarLayout = new QHBoxLayout(toolbar_);
+    toolbarLayout->setContentsMargins(12, 8, 12, 8);
+    toolbarLayout->setSpacing(6);
+    toolbarLayout->addWidget(backButton_);
+    toolbarLayout->addWidget(forwardButton_);
+    toolbarLayout->addWidget(reloadButton_);
+    toolbarLayout->addSpacing(2);
+    toolbarLayout->addWidget(addressBox_, 1);
+    toolbarLayout->addSpacing(2);
+    toolbarLayout->addWidget(primaryAction_);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    layout->addLayout(toolbar);
+    layout->addWidget(toolbar_);
     layout->addWidget(progressBar_);
     layout->addWidget(webView_, 1);
 
@@ -152,6 +153,16 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
 QWebEngineView *BrowserTab::view() const
 {
     return webView_;
+}
+
+void BrowserTab::setChromeWidgetsVisible(bool visible)
+{
+    if (toolbar_) {
+        toolbar_->setVisible(visible);
+    }
+    if (progressBar_) {
+        progressBar_->setVisible(visible && isLoading_);
+    }
 }
 
 QString BrowserTab::title() const
