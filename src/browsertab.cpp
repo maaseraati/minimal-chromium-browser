@@ -249,11 +249,11 @@ QString BrowserTab::homeHtml() const
       color-scheme: dark;
       --accent: #8fb9ef;
       --accent-strong: #6f9fdf;
-      --accent-soft: rgba(143, 185, 239, .18);
+      --accent-soft: #203452;
       --bg: #07101f;
-      --surface: rgba(25, 34, 52, .72);
-      --surface-high: rgba(37, 48, 70, .78);
-      --outline: rgba(196, 214, 244, .16);
+      --surface: #101b2d;
+      --surface-high: #17243a;
+      --outline: #263850;
       --text: #eef5ff;
       --muted: #a8b7ce;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -268,9 +268,9 @@ QString BrowserTab::homeHtml() const
       margin: 0;
       overflow-x: hidden;
       background:
-        radial-gradient(circle at 13% 12%, rgba(143, 185, 239, .36), transparent 24rem),
-        radial-gradient(circle at 88% 18%, rgba(74, 108, 171, .28), transparent 28rem),
-        radial-gradient(circle at 65% 98%, rgba(32, 66, 125, .42), transparent 34rem),
+        radial-gradient(circle at 14% 14%, #17355c 0, transparent 25rem),
+        radial-gradient(circle at 86% 18%, #132848 0, transparent 29rem),
+        radial-gradient(circle at 65% 96%, #12305d 0, transparent 34rem),
         linear-gradient(135deg, #07101f 0%, #0b1728 48%, #101e32 100%);
     }
     body::before,
@@ -281,7 +281,7 @@ QString BrowserTab::homeHtml() const
     }
     body::before {
       inset: 0;
-      opacity: .4;
+      opacity: .22;
       background:
         linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px),
         linear-gradient(0deg, rgba(255, 255, 255, .025) 1px, transparent 1px);
@@ -293,9 +293,8 @@ QString BrowserTab::homeHtml() const
       height: 720px;
       right: -210px;
       top: -210px;
-      border: 1px solid rgba(143, 185, 239, .18);
+      border: 1px solid #17325c;
       border-radius: 50%;
-      box-shadow: inset 0 0 80px rgba(143, 185, 239, .08);
     }
     a {
       color: inherit;
@@ -307,42 +306,20 @@ QString BrowserTab::homeHtml() const
       width: min(1120px, calc(100vw - 48px));
       min-height: 100vh;
       margin: 0 auto;
-      padding: 30px 0;
+      padding: 32px 0 54px;
     }
     .topbar {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       gap: 16px;
-      margin-bottom: 24px;
-    }
-    .brand-chip,
-    .settings-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 42px;
-      padding: 0 16px;
-      border: 1px solid var(--outline);
-      border-radius: 999px;
-      background: rgba(16, 25, 42, .62);
-      color: #d8e7ff;
-      box-shadow: 0 14px 44px rgba(0, 0, 0, .16);
-      backdrop-filter: blur(20px);
-    }
-    .brand-mark {
-      width: 28px;
-      height: 20px;
-      border-radius: 10px;
-      background:
-        radial-gradient(circle at 72% 28%, #bcd8ff 0 28%, transparent 29%),
-        linear-gradient(135deg, #cfe2ff, var(--accent-strong));
-      box-shadow: inset 0 -8px 16px rgba(32, 82, 155, .3);
+      margin-bottom: 52px;
     }
     .settings-chip {
-      width: 42px;
-      justify-content: center;
-      padding: 0;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
       color: var(--accent);
       font-size: 19px;
     }
@@ -354,7 +331,7 @@ QString BrowserTab::homeHtml() const
     .logo {
       width: min(390px, 68vw);
       height: auto;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       filter: drop-shadow(0 20px 42px rgba(80, 129, 196, .22));
     }
     .headline {
@@ -372,13 +349,12 @@ QString BrowserTab::homeHtml() const
       width: min(700px, 100%);
       min-height: 58px;
       padding: 8px;
-      border: 1px solid rgba(210, 226, 255, .18);
+      border: 1px solid var(--outline);
       border-radius: 28px;
-      background: linear-gradient(180deg, rgba(38, 49, 71, .82), rgba(24, 33, 51, .74));
+      background: var(--surface);
       box-shadow:
         0 20px 70px rgba(0, 0, 0, .28),
         inset 0 1px 0 rgba(255, 255, 255, .08);
-      backdrop-filter: blur(26px);
     }
     .search-icon,
     .voice {
@@ -428,7 +404,7 @@ QString BrowserTab::homeHtml() const
       grid-template-columns: repeat(6, minmax(86px, 1fr));
       gap: 14px;
       width: min(760px, 100%);
-      margin: 34px auto 0;
+      margin: 36px auto 0;
     }
     .shortcut {
       display: grid;
@@ -436,18 +412,15 @@ QString BrowserTab::homeHtml() const
       gap: 10px;
       min-height: 82px;
       padding: 11px 10px;
-      border: 1px solid rgba(209, 225, 255, .12);
+      border: 1px solid var(--outline);
       border-radius: 24px;
-      background: linear-gradient(180deg, rgba(41, 54, 77, .72), rgba(25, 34, 52, .7));
+      background: var(--surface-high);
       color: #dde9fb;
       box-shadow: 0 16px 44px rgba(0, 0, 0, .16);
-      backdrop-filter: blur(18px);
-      transition: transform .18s ease, border-color .18s ease, background .18s ease;
     }
     .shortcut:hover {
-      transform: translateY(-3px);
-      border-color: rgba(143, 185, 239, .34);
-      background: linear-gradient(180deg, rgba(61, 78, 108, .78), rgba(29, 41, 63, .76));
+      border-color: #3b5b84;
+      background: #1c2c46;
     }
     .shortcut-icon {
       display: grid;
@@ -464,122 +437,6 @@ QString BrowserTab::homeHtml() const
     .shortcut span:last-child {
       font-size: 13px;
       font-weight: 650;
-    }
-    .content-grid {
-      display: grid;
-      grid-template-columns: .95fr 1.35fr;
-      gap: 16px;
-      margin-top: 30px;
-    }
-    .panel {
-      border: 1px solid rgba(209, 225, 255, .14);
-      border-radius: 30px;
-      background: linear-gradient(180deg, rgba(25, 35, 55, .74), rgba(14, 23, 38, .74));
-      box-shadow:
-        0 22px 80px rgba(0, 0, 0, .22),
-        inset 0 1px 0 rgba(255, 255, 255, .06);
-      backdrop-filter: blur(22px);
-      overflow: hidden;
-    }
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 22px 10px;
-    }
-    .panel-title {
-      margin: 0;
-      font-size: 15px;
-      letter-spacing: .01em;
-    }
-    .panel-action {
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .recent-list,
-    .discover-list {
-      display: grid;
-      gap: 8px;
-      padding: 10px 16px 16px;
-    }
-    .recent-item,
-    .discover-row {
-      display: grid;
-      align-items: center;
-      gap: 12px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, .035);
-    }
-    .recent-item {
-      grid-template-columns: 44px 1fr auto;
-      padding: 10px;
-    }
-    .favicon {
-      display: grid;
-      place-items: center;
-      width: 44px;
-      height: 44px;
-      border-radius: 15px;
-      background: rgba(143, 185, 239, .16);
-      color: #d7e8ff;
-      font-weight: 800;
-    }
-    .item-title,
-    .discover-title {
-      color: #eef5ff;
-      font-size: 14px;
-      font-weight: 680;
-    }
-    .item-meta,
-    .discover-meta {
-      margin-top: 3px;
-      color: #8fa1bb;
-      font-size: 12px;
-    }
-    .item-time {
-      color: #8294ae;
-      font-size: 12px;
-    }
-    .feature-card {
-      display: grid;
-      gap: 16px;
-      padding: 0 16px 16px;
-    }
-    .feature-art {
-      min-height: 136px;
-      border-radius: 24px;
-      background:
-        radial-gradient(circle at 52% 35%, rgba(225, 238, 255, .9), transparent 0 46px),
-        radial-gradient(circle at 39% 43%, rgba(143, 185, 239, .9), transparent 0 76px),
-        radial-gradient(circle at 64% 64%, rgba(51, 101, 183, .96), transparent 0 94px),
-        linear-gradient(135deg, #0d3f99, #8ebcff);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14);
-    }
-    .discover-copy {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 14px;
-      align-items: end;
-    }
-    .discover-copy h3 {
-      margin: 0;
-      font-size: clamp(19px, 3vw, 25px);
-      letter-spacing: -.03em;
-    }
-    .discover-copy p {
-      max-width: 520px;
-      margin: 7px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-    .discover-list {
-      grid-template-columns: repeat(3, 1fr);
-      padding-top: 0;
-    }
-    .discover-row {
-      padding: 13px;
     }
     @media (max-width: 860px) {
       .page {
@@ -598,16 +455,8 @@ QString BrowserTab::homeHtml() const
       .shortcuts {
         grid-template-columns: repeat(3, 1fr);
       }
-      .content-grid,
-      .discover-copy,
-      .discover-list {
-        grid-template-columns: 1fr;
-      }
     }
     @media (max-width: 520px) {
-      .brand-chip {
-        font-size: 13px;
-      }
       .search-icon,
       .voice {
         flex-basis: 36px;
@@ -621,10 +470,6 @@ QString BrowserTab::homeHtml() const
 <body>
   <main class="page">
     <nav class="topbar" aria-label="Morphine shortcuts">
-      <a class="brand-chip" href="morphine://home" aria-label="Morphine home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>Morphine</span>
-      </a>
       <a class="settings-chip" href="morphine://settings" aria-label="Settings">⚙</a>
     </nav>
 
@@ -650,63 +495,6 @@ QString BrowserTab::homeHtml() const
         <a class="shortcut" href="https://www.reddit.com"><span class="shortcut-icon">r</span><span>Reddit</span></a>
         <a class="shortcut" href="https://www.wikipedia.org"><span class="shortcut-icon">W</span><span>Wikipedia</span></a>
       </div>
-    </section>
-
-    <section class="content-grid" aria-label="Home content">
-      <article class="panel">
-        <div class="panel-header">
-          <h2 class="panel-title">Continue where you left off</h2>
-          <a class="panel-action" href="https://www.google.com/search?q=material+design+3">Explore</a>
-        </div>
-        <div class="recent-list">
-          <a class="recent-item" href="https://m3.material.io">
-            <span class="favicon">M3</span>
-            <span><span class="item-title">Material Design 3</span><span class="item-meta">m3.material.io</span></span>
-            <span class="item-time">2h</span>
-          </a>
-          <a class="recent-item" href="https://developer.chrome.com">
-            <span class="favicon">C</span>
-            <span><span class="item-title">Chrome for Developers</span><span class="item-meta">developer.chrome.com</span></span>
-            <span class="item-time">1d</span>
-          </a>
-          <a class="recent-item" href="https://doc.qt.io/qt-6/qtwebengine-index.html">
-            <span class="favicon">Qt</span>
-            <span><span class="item-title">Qt WebEngine</span><span class="item-meta">doc.qt.io</span></span>
-            <span class="item-time">3d</span>
-          </a>
-        </div>
-      </article>
-
-      <article class="panel">
-        <div class="panel-header">
-          <h2 class="panel-title">Discover</h2>
-          <a class="panel-action" href="https://m3.material.io">Show more</a>
-        </div>
-        <div class="feature-card">
-          <div class="feature-art" aria-hidden="true"></div>
-          <div class="discover-copy">
-            <div>
-              <h3>Material You for Morphine</h3>
-              <p>Soft surfaces, deep blue glass layers, and rounded controls tuned for a compact browser start page.</p>
-            </div>
-            <a class="panel-action" href="https://m3.material.io">Read</a>
-          </div>
-        </div>
-        <div class="discover-list">
-          <a class="discover-row" href="https://m3.material.io/styles/color/overview">
-            <span class="discover-title">Designing with color</span>
-            <span class="discover-meta">m3.material.io</span>
-          </a>
-          <a class="discover-row" href="https://developer.android.com/design/ui/mobile/guides/styles/color">
-            <span class="discover-title">Build better with Material</span>
-            <span class="discover-meta">developer.android.com</span>
-          </a>
-          <a class="discover-row" href="https://web.dev/learn/design">
-            <span class="discover-title">Responsive UI basics</span>
-            <span class="discover-meta">web.dev</span>
-          </a>
-        </div>
-      </article>
     </section>
   </main>
 </body>
