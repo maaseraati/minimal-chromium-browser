@@ -18,9 +18,7 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QMouseEvent>
-#include <QPropertyAnimation>
 #include <QPushButton>
-#include <QEasingCurve>
 #include <QShortcut>
 #include <QSplitter>
 #include <QStatusBar>
@@ -53,8 +51,6 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
       sidePanel_(new QTabWidget(this)),
       findBar_(new QWidget(this)),
       findInput_(new QLineEdit(this)),
-      tabIndicator_(new QWidget(this)),
-      tabIndicatorAnimation_(new QPropertyAnimation(tabIndicator_, "geometry", this)),
       isPrivate_(isPrivate)
 {
     if (!isPrivate_) {
@@ -74,10 +70,6 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->tabBar()->setExpanding(false);
     tabs_->tabBar()->installEventFilter(this);
-    tabIndicator_->setObjectName(QStringLiteral("tabIndicator"));
-    tabIndicator_->hide();
-    tabIndicatorAnimation_->setDuration(150);
-    tabIndicatorAnimation_->setEasingCurve(QEasingCurve::OutCubic);
 
     setupDownloads();
     setupFindBar();
@@ -102,30 +94,30 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     newTabButton_->setToolTip(QStringLiteral("New tab"));
     newTabButton_->setAutoRaise(true);
     newTabButton_->setCursor(Qt::PointingHandCursor);
-    newTabButton_->setIconSize(QSize(18, 18));
+    newTabButton_->setIconSize(QSize(17, 17));
 
     minButton_ = new QToolButton(this);
     minButton_->setToolTip(QStringLiteral("Minimize"));
     minButton_->setAutoRaise(true);
     minButton_->setCursor(Qt::PointingHandCursor);
-    minButton_->setIconSize(QSize(18, 18));
+    minButton_->setIconSize(QSize(16, 16));
 
     maxButton_ = new QToolButton(this);
     maxButton_->setToolTip(QStringLiteral("Maximize"));
     maxButton_->setAutoRaise(true);
     maxButton_->setCursor(Qt::PointingHandCursor);
-    maxButton_->setIconSize(QSize(18, 18));
+    maxButton_->setIconSize(QSize(16, 16));
 
     closeButton_ = new QToolButton(this);
     closeButton_->setObjectName(QStringLiteral("windowClose"));
     closeButton_->setToolTip(QStringLiteral("Close"));
     closeButton_->setAutoRaise(true);
     closeButton_->setCursor(Qt::PointingHandCursor);
-    closeButton_->setIconSize(QSize(18, 18));
+    closeButton_->setIconSize(QSize(16, 16));
 
     auto *rightCorner = new QWidget(this);
     auto *rightLayoutCorner = new QHBoxLayout(rightCorner);
-    rightLayoutCorner->setContentsMargins(0, 0, 8, 0);
+    rightLayoutCorner->setContentsMargins(4, 0, 8, 0);
     rightLayoutCorner->setSpacing(2);
     rightLayoutCorner->addWidget(newTabButton_);
     rightLayoutCorner->addSpacing(8);
@@ -148,7 +140,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     menuButton_->setToolTip(QStringLiteral("Menu"));
     menuButton_->setAutoRaise(true);
     menuButton_->setCursor(Qt::PointingHandCursor);
-    menuButton_->setIconSize(QSize(20, 20));
+    menuButton_->setIconSize(QSize(18, 18));
     menuButton_->setPopupMode(QToolButton::InstantPopup);
     auto *menu = new QMenu(menuButton_);
     auto *newPrivateAction = menu->addAction(QStringLiteral("New private window"));
@@ -176,7 +168,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     menuButton_->setMenu(menu);
     auto *leftCorner = new QWidget(this);
     auto *leftLayoutCorner = new QHBoxLayout(leftCorner);
-    leftLayoutCorner->setContentsMargins(8, 0, 0, 0);
+    leftLayoutCorner->setContentsMargins(8, 0, 4, 0);
     leftLayoutCorner->setSpacing(2);
     leftLayoutCorner->addWidget(menuButton_);
     tabs_->setCornerWidget(leftCorner, Qt::TopLeftCorner);
@@ -190,10 +182,7 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L), this,
                   [] { ThemeManager::instance()->toggle(); });
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
-    connect(tabs_, &QTabWidget::currentChanged, this, [this] {
-        animateTabIndicator();
-        updateWindowTitle();
-    });
+    connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
 
     new QShortcut(QKeySequence::AddTab, this, SLOT(addTab()));
     new QShortcut(QKeySequence::Close, this, [this] {
@@ -271,9 +260,6 @@ bool BrowserWindow::eventFilter(QObject *watched, QEvent *event)
                     return true;
                 }
             }
-        } else if (event->type() == QEvent::Enter || event->type() == QEvent::Leave
-                   || event->type() == QEvent::MouseMove) {
-            tabs_->tabBar()->update();
         } else if (event->type() == QEvent::MouseButtonDblClick) {
             auto *me = static_cast<QMouseEvent *>(event);
             if (tabs_->tabBar()->tabAt(me->pos()) == -1) {
@@ -717,38 +703,11 @@ void BrowserWindow::showSidePanel(int pageIndex)
     sidePanel_->show();
 }
 
-void BrowserWindow::animateTabIndicator()
-{
-    const int index = tabs_->currentIndex();
-    if (index < 0) {
-        tabIndicator_->hide();
-        return;
-    }
-
-    const QRect tabRect = tabs_->tabBar()->tabRect(index);
-    const QPoint topLeft = tabs_->tabBar()->mapTo(this, tabRect.bottomLeft());
-    const QRect target(topLeft.x() + 16, topLeft.y() - 3, qMax(24, tabRect.width() - 32), 3);
-
-    if (!tabIndicator_->isVisible()) {
-        tabIndicator_->setGeometry(target);
-        tabIndicator_->show();
-        tabIndicator_->raise();
-        return;
-    }
-
-    tabIndicatorAnimation_->stop();
-    tabIndicatorAnimation_->setStartValue(tabIndicator_->geometry());
-    tabIndicatorAnimation_->setEndValue(target);
-    tabIndicatorAnimation_->start();
-    tabIndicator_->raise();
-}
-
 void BrowserWindow::refreshTabMetrics()
 {
-    tabs_->tabBar()->setFixedHeight(42);
+    tabs_->tabBar()->setFixedHeight(32);
     tabs_->tabBar()->setUsesScrollButtons(true);
     tabs_->tabBar()->setIconSize(QSize(16, 16));
-    animateTabIndicator();
 }
 
 void BrowserWindow::updateTabChrome(BrowserTab *tab)

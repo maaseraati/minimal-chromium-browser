@@ -8,7 +8,6 @@ class BrowserTab;
 class QLineEdit;
 class QListWidget;
 class QListWidgetItem;
-class QPropertyAnimation;
 class QTabWidget;
 class QToolButton;
 class QWebEnginePage;
@@ -59,7 +58,6 @@ private:
     void setupFindBar();
     void setupSidePanel();
     void showSidePanel(int pageIndex);
-    void animateTabIndicator();
     void refreshTabMetrics();
     void updateTabChrome(BrowserTab *tab);
     void wireTab(BrowserTab *tab);
@@ -74,8 +72,6 @@ private:
     QTabWidget *sidePanel_;
     QWidget *findBar_;
     QLineEdit *findInput_;
-    QWidget *tabIndicator_;
-    QPropertyAnimation *tabIndicatorAnimation_;
     QToolButton *menuButton_;
     QToolButton *newTabButton_;
     QToolButton *minButton_;
