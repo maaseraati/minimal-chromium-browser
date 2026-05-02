@@ -6,193 +6,14 @@
 
 namespace {
 
-constexpr auto kDarkStyleSheet = R"QSS(
-/* Material 3 dark chrome for Morphine */
-
+// Material 3 light palette mirrored from morphine://home so chrome and the
+// home page share the same accent (`#4a76b3` primary, `#d8e2ff`
+// primary-container, `#001a41` on-primary-container, `#fafbff` /
+// `#eef0f7` / `#e2e6ee` surface tiers, `#44474e` on-surface-variant,
+// `#c4c6cf` outline-variant).
+constexpr auto kStyleSheet = R"QSS(
 QMainWindow,
-QWidget#centralWidget,
-QWidget#chromeRoot {
-    background: #10131a;
-    color: #e3e2e7;
-}
-
-QStatusBar {
-    background: #10131a;
-    color: #c4c6cf;
-    border-top: 1px solid #1b1e25;
-    font-size: 12px;
-}
-
-QStatusBar::item { border: none; }
-
-QSplitter::handle {
-    background: #10131a;
-    width: 1px;
-}
-
-QTabWidget::pane {
-    border: 0;
-    background: #10131a;
-}
-
-QTabBar {
-    background: #10131a;
-    qproperty-drawBase: 0;
-}
-
-QTabBar::tab {
-    background: transparent;
-    color: #c4c6cf;
-    padding: 7px 8px 7px 14px;
-    margin: 6px 2px 0;
-    min-width: 140px;
-    max-width: 220px;
-    border: 0;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-QTabBar::tab:hover {
-    background: #1b1e25;
-    color: #e3e2e7;
-}
-
-QTabBar::tab:selected {
-    background: #262932;
-    color: #e3e2e7;
-}
-
-QTabBar::close-button {
-    image: url(:/assets/close.svg);
-    subcontrol-position: right;
-    subcontrol-origin: padding;
-    width: 16px;
-    height: 16px;
-    margin-left: 6px;
-    border-radius: 8px;
-}
-
-QTabBar::close-button:hover {
-    image: url(:/assets/close-hover.svg);
-    background: #43474e;
-}
-
-QTabWidget::corner { background: #10131a; }
-
-QToolButton {
-    background: transparent;
-    color: #c4c6cf;
-    border: 0;
-    border-radius: 16px;
-    padding: 4px;
-    min-width: 32px;
-    min-height: 32px;
-}
-
-QToolButton:hover {
-    background: #1b1e25;
-    color: #e3e2e7;
-}
-
-QToolButton:pressed { background: #262932; }
-QToolButton:disabled { color: #43474e; }
-QToolButton::menu-indicator { image: none; width: 0; }
-
-QToolButton#windowClose:hover {
-    background: #b3261e;
-    color: #ffffff;
-}
-
-QToolButton#primaryAction {
-    background: #aac5ff;
-    color: #00306e;
-    border-radius: 18px;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 0;
-}
-
-QToolButton#primaryAction:hover { background: #c2d3ff; }
-QToolButton#primaryAction:pressed { background: #92b4f5; }
-
-QLineEdit {
-    background: #1b1e25;
-    color: #e3e2e7;
-    border: 1px solid #1b1e25;
-    border-radius: 18px;
-    padding: 6px 14px;
-    selection-background-color: #284777;
-    selection-color: #d8e2ff;
-    font-size: 13px;
-}
-
-QLineEdit:focus { border-color: #aac5ff; }
-
-QPushButton {
-    background: #aac5ff;
-    color: #00306e;
-    border: 0;
-    border-radius: 18px;
-    padding: 7px 20px;
-    font-weight: 600;
-    font-size: 13px;
-}
-
-QPushButton:hover { background: #c2d3ff; }
-QPushButton:pressed { background: #92b4f5; }
-QPushButton:disabled { background: #262932; color: #43474e; }
-
-QProgressBar {
-    background: #1b1e25;
-    border: 0;
-    max-height: 2px;
-}
-
-QProgressBar::chunk { background: #aac5ff; }
-
-QListWidget {
-    background: #10131a;
-    color: #e3e2e7;
-    border: 0;
-    padding: 4px;
-    outline: none;
-}
-
-QListWidget::item { padding: 8px 10px; border-radius: 8px; }
-QListWidget::item:hover { background: #1b1e25; }
-QListWidget::item:selected { background: #262932; color: #e3e2e7; }
-
-QMenu {
-    background: #1b1e25;
-    color: #e3e2e7;
-    border: 1px solid #43474e;
-    border-radius: 10px;
-    padding: 6px;
-}
-
-QMenu::item {
-    background: transparent;
-    padding: 7px 18px;
-    border-radius: 6px;
-}
-
-QMenu::item:selected { background: #262932; }
-QMenu::separator { height: 1px; background: #43474e; margin: 4px 8px; }
-
-QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
-QScrollBar::handle:vertical { background: #43474e; border-radius: 4px; min-height: 30px; }
-QScrollBar::handle:vertical:hover { background: #5a5e66; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
-)QSS";
-
-constexpr auto kLightStyleSheet = R"QSS(
-/* Material 3 light chrome for Morphine */
-
-QMainWindow,
-QWidget#centralWidget,
-QWidget#chromeRoot {
+QWidget#centralWidget {
     background: #fafbff;
     color: #1a1c1f;
 }
@@ -207,68 +28,248 @@ QStatusBar {
 QStatusBar::item { border: none; }
 
 QSplitter::handle {
-    background: #fafbff;
+    background: #e2e6ee;
     width: 1px;
 }
 
+/* Tab strip + corner widgets share one surface so there's no banding. */
 QTabWidget::pane {
     border: 0;
     background: #fafbff;
 }
 
-QTabBar {
+QTabWidget::tab-bar { left: 0; }
+
+QTabWidget::corner {
     background: #fafbff;
-    qproperty-drawBase: 0;
 }
 
-QTabBar::tab {
+QWidget#chromeCorner {
+    background: #fafbff;
+}
+
+QTabBar { background: transparent; qproperty-drawBase: 0; }
+
+/* Menu chip — M3 primary block at the very left of the tab strip
+   (78x66 with rounded bottom-right, mirrors prototype `.menu-button`). */
+QToolButton#chromeMenu {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #4a76b3, stop:1 #2e5a99);
+    color: #ffffff;
+    border: 0;
+    border-bottom-right-radius: 16px;
+    padding: 0;
+    min-width: 78px;
+    min-height: 66px;
+    max-width: 78px;
+    max-height: 66px;
+}
+
+QToolButton#chromeMenu:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #5683c0, stop:1 #3a68a8);
+}
+
+QToolButton#chromeMenu:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #3e6aa6, stop:1 #244e8c);
+}
+
+QToolButton#chromeMenu::menu-indicator { image: none; width: 0; }
+
+/* New-tab pill on the right — light primary-container chip. 48x48 with
+   14px radius, exactly like the prototype `.new-tab-button`. */
+QToolButton#chromeNewTab {
+    background: #d8e2ff;
+    color: #001a41;
+    border: 0;
+    border-radius: 14px;
+    padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
+}
+
+QToolButton#chromeNewTab:hover {
+    background: #c5d3fa;
+}
+
+QToolButton#chromeNewTab:pressed {
+    background: #b3c4f3;
+}
+
+QToolButton#chromeNewTab::menu-indicator { image: none; width: 0; }
+
+/* Window controls (—, □, ×) — 28x28 squares with 8px radius. */
+QToolButton#windowControl {
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #44474e;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
+}
+
+QToolButton#windowControl:hover {
+    background: rgba(74, 118, 179, 0.10);
+}
+
+QToolButton#windowControl:pressed {
+    background: rgba(74, 118, 179, 0.18);
+}
+
+QToolButton#windowClose {
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #44474e;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
+}
+
+QToolButton#windowClose:hover {
+    background: #d4423a;
+    color: #ffffff;
+}
+
+QToolButton#windowClose:pressed {
+    background: #b3261e;
+    color: #ffffff;
+}
+
+QToolButton#windowControl::menu-indicator,
+QToolButton#windowClose::menu-indicator { image: none; width: 0; }
+
+/* Toolbar (back/forward/reload + omnibox + profile). Kept on the same
+   surface family as the strip so the chrome reads as one block. */
+QWidget#chromeToolbar {
+    background: #fafbff;
+    border-bottom: 1px solid #e2e6ee;
+}
+
+/* Back / forward — transparent circles, glyph only. */
+QToolButton#navButton {
     background: transparent;
     color: #44474e;
-    padding: 7px 8px 7px 14px;
-    margin: 6px 2px 0;
-    min-width: 140px;
-    max-width: 220px;
     border: 0;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
+    border-radius: 24px;
+    padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
-QTabBar::tab:hover {
+QToolButton#navButton:hover {
     background: #eef0f7;
     color: #1a1c1f;
 }
 
-QTabBar::tab:selected {
+QToolButton#navButton:pressed {
     background: #e2e6ee;
+}
+
+QToolButton#navButton:disabled {
+    color: #b6b9c1;
+}
+
+/* Reload — circular primary-container chip (M3 blue equivalent of the
+   prototype's green refresh chip, same shape). */
+QToolButton#navReload {
+    background: #d8e2ff;
+    color: #001a41;
+    border: 0;
+    border-radius: 24px;
+    padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
+}
+
+QToolButton#navReload:hover {
+    background: #c5d3fa;
+}
+
+QToolButton#navReload:pressed {
+    background: #b3c4f3;
+}
+
+/* Profile — circular primary-container chip (mirrors `.profile-button`). */
+QToolButton#profileButton {
+    background: #d8e2ff;
+    color: #001a41;
+    border: 0;
+    border-radius: 24px;
+    padding: 0;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
+}
+
+QToolButton#profileButton:hover {
+    background: #c5d3fa;
+}
+
+QToolButton#profileButton:pressed {
+    background: #b3c4f3;
+}
+
+QToolButton#navButton::menu-indicator,
+QToolButton#navReload::menu-indicator,
+QToolButton#profileButton::menu-indicator { image: none; width: 0; }
+
+/* Omnibox — pill input mirroring the prototype `.omnibox` (height 46,
+   23px radius, padding 0 20). */
+QLineEdit#omnibox {
+    background: #fbfcff;
     color: #1a1c1f;
+    border: 1px solid #e2e6ee;
+    border-radius: 23px;
+    padding: 0 20px;
+    selection-background-color: #d8e2ff;
+    selection-color: #001a41;
+    font-size: 14px;
+    min-height: 46px;
+    max-height: 46px;
 }
 
-QTabBar::close-button {
-    image: url(:/assets/close-light.svg);
-    subcontrol-position: right;
-    subcontrol-origin: padding;
-    width: 16px;
-    height: 16px;
-    margin-left: 6px;
-    border-radius: 8px;
+QLineEdit#omnibox:focus {
+    background: #ffffff;
+    border-color: #4a76b3;
 }
 
-QTabBar::close-button:hover {
-    image: url(:/assets/close-light-hover.svg);
-    background: #c4c6cf;
+/* Generic line edits (find bar, settings dialog). */
+QLineEdit {
+    background: #eef0f7;
+    color: #1a1c1f;
+    border: 1px solid #e2e6ee;
+    border-radius: 14px;
+    padding: 6px 14px;
+    selection-background-color: #d8e2ff;
+    selection-color: #001a41;
+    font-size: 13px;
 }
 
-QTabWidget::corner { background: #fafbff; }
+QLineEdit:focus {
+    border-color: #4a76b3;
+}
 
+/* Default tool buttons elsewhere (settings dialog, find bar). */
 QToolButton {
     background: transparent;
     color: #44474e;
     border: 0;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 4px;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 28px;
+    min-height: 28px;
 }
 
 QToolButton:hover {
@@ -276,13 +277,8 @@ QToolButton:hover {
     color: #1a1c1f;
 }
 
-QToolButton:pressed { background: #e2e6ee; }
-QToolButton:disabled { color: #c4c6cf; }
-QToolButton::menu-indicator { image: none; width: 0; }
-
-QToolButton#windowClose:hover {
-    background: #b3261e;
-    color: #ffffff;
+QToolButton:pressed {
+    background: #e2e6ee;
 }
 
 QToolButton#primaryAction {
@@ -294,35 +290,38 @@ QToolButton#primaryAction {
     padding: 0;
 }
 
-QToolButton#primaryAction:hover { background: #5e8ac9; }
-QToolButton#primaryAction:pressed { background: #3a629b; }
-
-QLineEdit {
-    background: #eef0f7;
-    color: #1a1c1f;
-    border: 1px solid #eef0f7;
-    border-radius: 18px;
-    padding: 6px 14px;
-    selection-background-color: #d8e2ff;
-    selection-color: #001a41;
-    font-size: 13px;
+QToolButton#primaryAction:hover {
+    background: #5683c0;
 }
 
-QLineEdit:focus { border-color: #4a76b3; }
+QToolButton#primaryAction:pressed {
+    background: #3e6aa6;
+}
 
 QPushButton {
-    background: #4a76b3;
-    color: #ffffff;
-    border: 0;
-    border-radius: 18px;
+    background: #d8e2ff;
+    color: #001a41;
+    border: 1px solid #c1d0f5;
+    border-radius: 16px;
     padding: 7px 20px;
     font-weight: 600;
     font-size: 13px;
 }
 
-QPushButton:hover { background: #5e8ac9; }
-QPushButton:pressed { background: #3a629b; }
-QPushButton:disabled { background: #e2e6ee; color: #c4c6cf; }
+QPushButton:hover {
+    background: #c5d3fa;
+    border-color: #a8baee;
+}
+
+QPushButton:pressed {
+    background: #b3c4f3;
+}
+
+QPushButton:disabled {
+    background: #eef0f7;
+    color: #aab0bc;
+    border-color: #e2e6ee;
+}
 
 QProgressBar {
     background: #eef0f7;
@@ -332,6 +331,7 @@ QProgressBar {
 
 QProgressBar::chunk { background: #4a76b3; }
 
+/* Lists used for bookmarks / history side panel. */
 QListWidget {
     background: #fafbff;
     color: #1a1c1f;
@@ -342,35 +342,78 @@ QListWidget {
 
 QListWidget::item { padding: 8px 10px; border-radius: 8px; }
 QListWidget::item:hover { background: #eef0f7; }
-QListWidget::item:selected { background: #e2e6ee; color: #1a1c1f; }
+QListWidget::item:selected { background: #d8e2ff; color: #001a41; }
 
 QMenu {
-    background: #ffffff;
+    background: #fafbff;
     color: #1a1c1f;
-    border: 1px solid #c4c6cf;
-    border-radius: 10px;
+    border: 1px solid #e2e6ee;
+    border-radius: 12px;
     padding: 6px;
 }
 
 QMenu::item {
     background: transparent;
     padding: 7px 18px;
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
-QMenu::item:selected { background: #eef0f7; }
-QMenu::separator { height: 1px; background: #c4c6cf; margin: 4px 8px; }
+QMenu::item:selected {
+    background: #d8e2ff;
+    color: #001a41;
+}
 
-QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
-QScrollBar::handle:vertical { background: #c4c6cf; border-radius: 4px; min-height: 30px; }
-QScrollBar::handle:vertical:hover { background: #a8aab1; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+QMenu::separator {
+    height: 1px;
+    background: #e2e6ee;
+    margin: 4px 8px;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical {
+    background: #c4c6cf;
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #a9adb8;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical { height: 0; }
+
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical { background: transparent; }
+
+/* Side panel tabs (bookmarks / history). */
+QTabWidget#sidePanel::pane { background: #fafbff; border: 0; }
+QTabWidget#sidePanel QTabBar::tab {
+    background: transparent;
+    color: #44474e;
+    padding: 6px 14px;
+    border-radius: 12px;
+    margin: 4px 2px;
+    font-weight: 500;
+}
+QTabWidget#sidePanel QTabBar::tab:selected {
+    background: #d8e2ff;
+    color: #001a41;
+}
+QTabWidget#sidePanel QTabBar::tab:hover:!selected {
+    background: #eef0f7;
+    color: #1a1c1f;
+}
 )QSS";
 
-void applyTheme(QApplication &app, bool light)
+void applyTheme(QApplication &app)
 {
-    app.setStyleSheet(QString::fromUtf8(light ? kLightStyleSheet : kDarkStyleSheet));
+    app.setStyleSheet(QString::fromUtf8(kStyleSheet));
 }
 
 } // namespace
@@ -383,9 +426,8 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     auto *theme = ThemeManager::instance();
-    applyTheme(app, theme->isLight());
-    QObject::connect(theme, &ThemeManager::lightChanged, &app,
-                     [&app](bool light) { applyTheme(app, light); });
+    Q_UNUSED(theme);
+    applyTheme(app);
 
     BrowserWindow window;
     window.show();

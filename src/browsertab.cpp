@@ -26,13 +26,16 @@
 namespace {
 constexpr auto kHomeUrl = "morphine://home";
 
-auto makeToolButton(const QString &toolTip) -> QToolButton *
+auto makeToolButton(const QString &toolTip, const QString &objectName = QString()) -> QToolButton *
 {
     auto *button = new QToolButton;
     button->setToolTip(toolTip);
-    button->setAutoRaise(true);
+    button->setAutoRaise(false);
     button->setCursor(Qt::PointingHandCursor);
-    button->setIconSize(QSize(20, 20));
+    button->setIconSize(QSize(22, 22));
+    if (!objectName.isEmpty()) {
+        button->setObjectName(objectName);
+    }
     return button;
 }
 } // namespace
@@ -42,19 +45,20 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
       webView_(new QWebEngineView(this)),
       addressBar_(new QLineEdit(this)),
       progressBar_(new QProgressBar(this)),
-      backButton_(makeToolButton("Back")),
-      forwardButton_(makeToolButton("Forward")),
-      reloadButton_(makeToolButton("Reload")),
-      primaryAction_(makeToolButton("Go")),
+      backButton_(makeToolButton("Back", QStringLiteral("navButton"))),
+      forwardButton_(makeToolButton("Forward", QStringLiteral("navButton"))),
+      reloadButton_(makeToolButton("Reload", QStringLiteral("navReload"))),
+      primaryAction_(makeToolButton("Profile", QStringLiteral("profileButton"))),
       lockAction_(nullptr),
       currentTitle_("Morphine"),
       isLoading_(false)
 {
     installPage(page ? page : new BrowserPage(profile, webView_));
 
+    addressBar_->setObjectName(QStringLiteral("omnibox"));
     addressBar_->setClearButtonEnabled(false);
     addressBar_->setPlaceholderText("Enter URL or search Google");
-    addressBar_->setMinimumHeight(36);
+    addressBar_->setMinimumHeight(46);
     lockAction_ = addressBar_->addAction(QIcon(), QLineEdit::LeadingPosition);
     updateAddressLockVisible();
 
@@ -62,29 +66,32 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
     progressBar_->setMaximumHeight(2);
     progressBar_->hide();
 
-    primaryAction_->setObjectName(QStringLiteral("primaryAction"));
-    primaryAction_->setIconSize(QSize(20, 20));
-    primaryAction_->setFixedSize(QSize(36, 36));
+    backButton_->setFixedSize(QSize(48, 48));
+    forwardButton_->setFixedSize(QSize(48, 48));
+    reloadButton_->setFixedSize(QSize(48, 48));
+    primaryAction_->setIconSize(QSize(24, 24));
+    primaryAction_->setFixedSize(QSize(48, 48));
 
     refreshIcons();
     connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
             [this](bool) { refreshIcons(); });
 
-    auto *toolbar = new QHBoxLayout;
-    toolbar->setContentsMargins(12, 8, 12, 8);
-    toolbar->setSpacing(4);
+    auto *toolbarWidget = new QWidget;
+    toolbarWidget->setObjectName(QStringLiteral("chromeToolbar"));
+    toolbarWidget->setFixedHeight(70);
+    auto *toolbar = new QHBoxLayout(toolbarWidget);
+    toolbar->setContentsMargins(18, 11, 24, 11);
+    toolbar->setSpacing(14);
     toolbar->addWidget(backButton_);
     toolbar->addWidget(forwardButton_);
     toolbar->addWidget(reloadButton_);
-    toolbar->addSpacing(4);
     toolbar->addWidget(addressBar_, 1);
-    toolbar->addSpacing(4);
     toolbar->addWidget(primaryAction_);
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    layout->addLayout(toolbar);
+    layout->addWidget(toolbarWidget);
     layout->addWidget(progressBar_);
     layout->addWidget(webView_, 1);
 
@@ -101,9 +108,8 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
             webView_->reload();
         }
     });
-    connect(primaryAction_, &QToolButton::clicked, this, [this] {
-        loadInput(addressBar_->text());
-    });
+    // The HTML prototype's toolbar exposes a profile chip (no "Go" arrow);
+    // navigation happens via Enter in the omnibox.
     connect(addressBar_, &QLineEdit::returnPressed, this, [this] {
         loadInput(addressBar_->text());
     });
@@ -682,24 +688,28 @@ void BrowserTab::updateActions()
 
 void BrowserTab::refreshIcons()
 {
-    const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
-    backButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-back.svg"), iconColor));
-    forwardButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-forward.svg"), iconColor));
+    // M3 light: nav buttons sit on the surface (`#fafbff`) so the glyph
+    // matches `--on-surface-variant` (`#44474e`). The reload chip uses
+    // the deeper `--on-primary-container` ink (`#001a41`) to read against
+    // its primary-container background, and the lock follows the variant.
+    const QColor navGlyph(QStringLiteral("#44474e"));
+    const QColor reloadGlyph(QStringLiteral("#001a41"));
+    const QColor lockGlyph(QStringLiteral("#44474e"));
+    backButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-back.svg"), navGlyph));
+    forwardButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-forward.svg"), navGlyph));
     reloadButton_->setIcon(IconUtils::coloredSvg(
         isLoading_ ? QStringLiteral(":/assets/stop.svg") : QStringLiteral(":/assets/refresh.svg"),
-        iconColor));
+        reloadGlyph));
     if (lockAction_) {
-        lockAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/lock.svg"), iconColor, 18));
+        lockAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/lock.svg"), lockGlyph, 18));
     }
     updatePrimaryActionIcon();
 }
 
 void BrowserTab::updatePrimaryActionIcon()
 {
-    const bool light = ThemeManager::instance()->isLight();
-    const QColor onPrimary(light ? QStringLiteral("#ffffff") : QStringLiteral("#00306e"));
-    primaryAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/arrow-go.svg"), onPrimary, 22));
+    const QColor profileGlyph(QStringLiteral("#001a41"));
+    primaryAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/profile.svg"), profileGlyph, 24));
 }
 
 void BrowserTab::updateAddressLockVisible()

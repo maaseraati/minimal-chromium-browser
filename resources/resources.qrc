@@ -18,6 +18,7 @@
         <file>arrow-go.svg</file>
         <file>stop.svg</file>
         <file>more-vert.svg</file>
+        <file>profile.svg</file>
     </qresource>
     <qresource prefix="/qtwebchannel">
         <file>qwebchannel.js</file>
