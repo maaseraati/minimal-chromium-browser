@@ -1,6 +1,7 @@
 #include "browserwindow.h"
 
 #include "browsertab.h"
+#include "chrometabbar.h"
 #include "iconutils.h"
 #include "settingsdialog.h"
 #include "thememanager.h"
@@ -42,7 +43,7 @@ BrowserWindow::BrowserWindow(QWidget *parent)
 
 BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     : QMainWindow(parent),
-      tabs_(new QTabWidget(this)),
+      tabs_(new ChromeTabWidget(this)),
       profile_(isPrivate ? new QWebEngineProfile(this)
                          : new QWebEngineProfile(QStringLiteral("morphine"), this)),
       settings_(QStringLiteral("Morphine"), QStringLiteral("Morphine")),
@@ -66,10 +67,14 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
 
     tabs_->setDocumentMode(true);
     tabs_->setMovable(true);
-    tabs_->setTabsClosable(true);
+    tabs_->setTabsClosable(false); // ChromeTabBar paints + dispatches close itself
     tabs_->setElideMode(Qt::ElideRight);
     tabs_->tabBar()->setExpanding(false);
     tabs_->tabBar()->installEventFilter(this);
+
+    if (auto *chromeBar = qobject_cast<ChromeTabBar *>(tabs_->tabBar())) {
+        connect(chromeBar, &ChromeTabBar::tabCloseClicked, this, &BrowserWindow::closeTab);
+    }
 
     setupDownloads();
     setupFindBar();
@@ -91,22 +96,28 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     setCentralWidget(splitter);
 
     newTabButton_ = new QToolButton(this);
+    newTabButton_->setObjectName(QStringLiteral("chromeNewTab"));
     newTabButton_->setToolTip(QStringLiteral("New tab"));
-    newTabButton_->setAutoRaise(true);
+    newTabButton_->setAutoRaise(false);
     newTabButton_->setCursor(Qt::PointingHandCursor);
-    newTabButton_->setIconSize(QSize(18, 18));
+    newTabButton_->setIconSize(QSize(20, 20));
+    newTabButton_->setFixedSize(QSize(48, 48));
 
     minButton_ = new QToolButton(this);
+    minButton_->setObjectName(QStringLiteral("windowControl"));
     minButton_->setToolTip(QStringLiteral("Minimize"));
     minButton_->setAutoRaise(true);
     minButton_->setCursor(Qt::PointingHandCursor);
     minButton_->setIconSize(QSize(18, 18));
+    minButton_->setFixedSize(QSize(28, 28));
 
     maxButton_ = new QToolButton(this);
+    maxButton_->setObjectName(QStringLiteral("windowControl"));
     maxButton_->setToolTip(QStringLiteral("Maximize"));
     maxButton_->setAutoRaise(true);
     maxButton_->setCursor(Qt::PointingHandCursor);
     maxButton_->setIconSize(QSize(18, 18));
+    maxButton_->setFixedSize(QSize(28, 28));
 
     closeButton_ = new QToolButton(this);
     closeButton_->setObjectName(QStringLiteral("windowClose"));
@@ -114,15 +125,19 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     closeButton_->setAutoRaise(true);
     closeButton_->setCursor(Qt::PointingHandCursor);
     closeButton_->setIconSize(QSize(18, 18));
+    closeButton_->setFixedSize(QSize(28, 28));
 
     auto *rightCorner = new QWidget(this);
+    rightCorner->setObjectName(QStringLiteral("chromeCorner"));
     auto *rightLayoutCorner = new QHBoxLayout(rightCorner);
-    rightLayoutCorner->setContentsMargins(0, 0, 8, 0);
-    rightLayoutCorner->setSpacing(2);
+    rightLayoutCorner->setContentsMargins(6, 0, 18, 0);
+    rightLayoutCorner->setSpacing(4);
     rightLayoutCorner->addWidget(newTabButton_);
-    rightLayoutCorner->addSpacing(8);
+    rightLayoutCorner->addSpacing(14);
     rightLayoutCorner->addWidget(minButton_);
+    rightLayoutCorner->addSpacing(18);
     rightLayoutCorner->addWidget(maxButton_);
+    rightLayoutCorner->addSpacing(18);
     rightLayoutCorner->addWidget(closeButton_);
     tabs_->setCornerWidget(rightCorner, Qt::TopRightCorner);
 
@@ -137,10 +152,12 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     connect(closeButton_, &QToolButton::clicked, this, &BrowserWindow::close);
 
     menuButton_ = new QToolButton(this);
+    menuButton_->setObjectName(QStringLiteral("chromeMenu"));
     menuButton_->setToolTip(QStringLiteral("Menu"));
-    menuButton_->setAutoRaise(true);
+    menuButton_->setAutoRaise(false);
     menuButton_->setCursor(Qt::PointingHandCursor);
-    menuButton_->setIconSize(QSize(20, 20));
+    menuButton_->setIconSize(QSize(28, 28));
+    menuButton_->setFixedSize(QSize(78, 58));
     menuButton_->setPopupMode(QToolButton::InstantPopup);
     auto *menu = new QMenu(menuButton_);
     auto *newPrivateAction = menu->addAction(QStringLiteral("New private window"));
@@ -167,9 +184,10 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     }
     menuButton_->setMenu(menu);
     auto *leftCorner = new QWidget(this);
+    leftCorner->setObjectName(QStringLiteral("chromeCorner"));
     auto *leftLayoutCorner = new QHBoxLayout(leftCorner);
-    leftLayoutCorner->setContentsMargins(8, 0, 0, 0);
-    leftLayoutCorner->setSpacing(2);
+    leftLayoutCorner->setContentsMargins(0, 0, 12, 0);
+    leftLayoutCorner->setSpacing(0);
     leftLayoutCorner->addWidget(menuButton_);
     tabs_->setCornerWidget(leftCorner, Qt::TopLeftCorner);
 
@@ -285,19 +303,23 @@ void BrowserWindow::changeEvent(QEvent *event)
 
 void BrowserWindow::refreshChromeIcons()
 {
-    const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    // Green prototype: menu is dark-green block (light glyph), `+` sits on
+    // light-green pill (dark glyph), window controls live on the cream strip
+    // (medium-dark glyph).
+    const QColor menuGlyph(QStringLiteral("#eef5e5"));
+    const QColor newTabGlyph(QStringLiteral("#141a10"));
+    const QColor windowGlyph(QStringLiteral("#32372f"));
     if (menuButton_) {
-        menuButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/menu.svg"), iconColor));
+        menuButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/menu.svg"), menuGlyph));
     }
     if (newTabButton_) {
-        newTabButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/plus.svg"), iconColor));
+        newTabButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/plus.svg"), newTabGlyph));
     }
     if (minButton_) {
-        minButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-min.svg"), iconColor));
+        minButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-min.svg"), windowGlyph));
     }
     if (closeButton_) {
-        closeButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-close.svg"), iconColor));
+        closeButton_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/window-close.svg"), windowGlyph));
     }
     updateMaximizeIcon();
 }
@@ -307,12 +329,11 @@ void BrowserWindow::updateMaximizeIcon()
     if (!maxButton_) {
         return;
     }
-    const bool light = ThemeManager::instance()->isLight();
-    const QColor iconColor(light ? QStringLiteral("#44474e") : QStringLiteral("#c4c6cf"));
+    const QColor windowGlyph(QStringLiteral("#32372f"));
     const QString resource = isMaximized()
         ? QStringLiteral(":/assets/window-restore.svg")
         : QStringLiteral(":/assets/window-max.svg");
-    maxButton_->setIcon(IconUtils::coloredSvg(resource, iconColor));
+    maxButton_->setIcon(IconUtils::coloredSvg(resource, windowGlyph));
     maxButton_->setToolTip(isMaximized() ? QStringLiteral("Restore") : QStringLiteral("Maximize"));
 }
 
@@ -707,8 +728,8 @@ void BrowserWindow::updateTabChrome(BrowserTab *tab)
         return;
     }
 
-    const QString title = tab->title().left(32);
-    tabs_->setTabText(index, tab->isLoading() ? QStringLiteral("◌ %1").arg(title) : title);
+    const QString title = tab->title().left(64);
+    tabs_->setTabText(index, title);
     tabs_->setTabToolTip(index, tab->url().isEmpty() ? tab->title() : tab->url().toString());
     tabs_->setTabIcon(index, tab->icon());
     updateWindowTitle();

@@ -21,6 +21,8 @@ qt_add_executable(morphine
     src/browserwindow.h
     src/browsertab.cpp
     src/browsertab.h
+    src/chrometabbar.cpp
+    src/chrometabbar.h
     src/iconutils.cpp
     src/iconutils.h
     src/settingsdialog.cpp
