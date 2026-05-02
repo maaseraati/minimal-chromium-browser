@@ -1,6 +1,7 @@
 #include "browserwindow.h"
 
 #include "browsertab.h"
+#include "chrometabbar.h"
 #include "iconutils.h"
 #include "settingsdialog.h"
 #include "thememanager.h"
@@ -35,6 +36,15 @@
 #include <QWebEngineView>
 #include <QWindow>
 
+namespace {
+
+class BrowserTabWidget final : public QTabWidget {
+public:
+    using QTabWidget::setTabBar;
+};
+
+} // namespace
+
 BrowserWindow::BrowserWindow(QWidget *parent)
     : BrowserWindow(false, parent)
 {
@@ -42,7 +52,7 @@ BrowserWindow::BrowserWindow(QWidget *parent)
 
 BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     : QMainWindow(parent),
-      tabs_(new QTabWidget(this)),
+      tabs_(new BrowserTabWidget),
       profile_(isPrivate ? new QWebEngineProfile(this)
                          : new QWebEngineProfile(QStringLiteral("morphine"), this)),
       settings_(QStringLiteral("Morphine"), QStringLiteral("Morphine")),
@@ -65,6 +75,8 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground, false);
 
     tabs_->setDocumentMode(true);
+    auto *chromeTabBar = new ChromeTabBar(tabs_);
+    static_cast<BrowserTabWidget *>(tabs_)->setTabBar(chromeTabBar);
     tabs_->setMovable(true);
     tabs_->setTabsClosable(true);
     tabs_->setElideMode(Qt::ElideRight);
@@ -182,7 +194,12 @@ BrowserWindow::BrowserWindow(bool isPrivate, QWidget *parent)
     new QShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L), this,
                   [] { ThemeManager::instance()->toggle(); });
     connect(tabs_, &QTabWidget::tabCloseRequested, this, &BrowserWindow::closeTab);
-    connect(tabs_, &QTabWidget::currentChanged, this, &BrowserWindow::updateWindowTitle);
+    connect(tabs_, &QTabWidget::currentChanged, this, [this, chromeTabBar] {
+        chromeTabBar->animateSelectionToCurrent();
+        updateWindowTitle();
+    });
+    connect(ThemeManager::instance(), &ThemeManager::lightChanged, chromeTabBar,
+            &ChromeTabBar::refreshTheme);
 
     new QShortcut(QKeySequence::AddTab, this, SLOT(addTab()));
     new QShortcut(QKeySequence::Close, this, [this] {
@@ -705,7 +722,7 @@ void BrowserWindow::showSidePanel(int pageIndex)
 
 void BrowserWindow::refreshTabMetrics()
 {
-    tabs_->tabBar()->setFixedHeight(32);
+    tabs_->tabBar()->setFixedHeight(40);
     tabs_->tabBar()->setUsesScrollButtons(true);
     tabs_->tabBar()->setIconSize(QSize(16, 16));
 }

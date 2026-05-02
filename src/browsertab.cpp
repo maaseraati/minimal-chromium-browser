@@ -5,11 +5,11 @@
 #include "settingsdialog.h"
 #include "thememanager.h"
 
-#include <QAction>
 #include <QColor>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QKeySequence>
+#include <QLabel>
 #include <QLineEdit>
 #include <QProgressBar>
 #include <QShortcut>
@@ -40,13 +40,14 @@ auto makeToolButton(const QString &toolTip) -> QToolButton *
 BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget *parent)
     : QWidget(parent),
       webView_(new QWebEngineView(this)),
+      addressBox_(new QWidget(this)),
+      lockIcon_(new QLabel(addressBox_)),
       addressBar_(new QLineEdit(this)),
       progressBar_(new QProgressBar(this)),
       backButton_(makeToolButton("Back")),
       forwardButton_(makeToolButton("Forward")),
       reloadButton_(makeToolButton("Reload")),
       primaryAction_(makeToolButton("Go")),
-      lockAction_(nullptr),
       currentTitle_("Morphine"),
       isLoading_(false)
 {
@@ -54,9 +55,17 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
 
     addressBar_->setClearButtonEnabled(false);
     addressBar_->setPlaceholderText("Enter URL or search Google");
-    addressBar_->setMinimumHeight(32);
-    addressBar_->setTextMargins(6, 0, 0, 0);
-    lockAction_ = addressBar_->addAction(QIcon(), QLineEdit::LeadingPosition);
+    addressBar_->setObjectName(QStringLiteral("addressEdit"));
+    addressBar_->setFrame(false);
+    addressBox_->setObjectName(QStringLiteral("addressBox"));
+    addressBox_->setMinimumHeight(36);
+    lockIcon_->setFixedSize(QSize(18, 18));
+    lockIcon_->setAlignment(Qt::AlignCenter);
+    auto *addressLayout = new QHBoxLayout(addressBox_);
+    addressLayout->setContentsMargins(14, 0, 12, 0);
+    addressLayout->setSpacing(10);
+    addressLayout->addWidget(lockIcon_);
+    addressLayout->addWidget(addressBar_, 1);
     updateAddressLockVisible();
 
     progressBar_->setTextVisible(false);
@@ -65,20 +74,20 @@ BrowserTab::BrowserTab(QWebEngineProfile *profile, QWebEnginePage *page, QWidget
 
     primaryAction_->setObjectName(QStringLiteral("primaryAction"));
     primaryAction_->setIconSize(QSize(18, 18));
-    primaryAction_->setFixedSize(QSize(32, 32));
+    primaryAction_->setFixedSize(QSize(36, 36));
 
     refreshIcons();
     connect(ThemeManager::instance(), &ThemeManager::lightChanged, this,
             [this](bool) { refreshIcons(); });
 
     auto *toolbar = new QHBoxLayout;
-    toolbar->setContentsMargins(12, 6, 12, 6);
+    toolbar->setContentsMargins(12, 8, 12, 8);
     toolbar->setSpacing(6);
     toolbar->addWidget(backButton_);
     toolbar->addWidget(forwardButton_);
     toolbar->addWidget(reloadButton_);
     toolbar->addSpacing(2);
-    toolbar->addWidget(addressBar_, 1);
+    toolbar->addWidget(addressBox_, 1);
     toolbar->addSpacing(2);
     toolbar->addWidget(primaryAction_);
 
@@ -690,9 +699,9 @@ void BrowserTab::refreshIcons()
     reloadButton_->setIcon(IconUtils::coloredSvg(
         isLoading_ ? QStringLiteral(":/assets/stop.svg") : QStringLiteral(":/assets/refresh.svg"),
         iconColor));
-    if (lockAction_) {
-        lockAction_->setIcon(IconUtils::coloredSvg(QStringLiteral(":/assets/lock.svg"), iconColor, 18));
-    }
+    lockIcon_->setPixmap(IconUtils::coloredSvg(
+                             QStringLiteral(":/assets/lock.svg"), iconColor, 18)
+                             .pixmap(QSize(18, 18)));
     updatePrimaryActionIcon();
 }
 
@@ -705,11 +714,8 @@ void BrowserTab::updatePrimaryActionIcon()
 
 void BrowserTab::updateAddressLockVisible()
 {
-    if (!lockAction_) {
-        return;
-    }
     const QString scheme = webView_->url().scheme();
-    lockAction_->setVisible(scheme == QStringLiteral("https") || scheme == QStringLiteral("morphine"));
+    lockIcon_->setVisible(scheme == QStringLiteral("https") || scheme == QStringLiteral("morphine"));
 }
 
 void BrowserTab::setLoading(bool loading, int progress)

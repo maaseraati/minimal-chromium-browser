@@ -36,41 +36,23 @@ QTabWidget::pane {
 }
 
 QTabBar {
-    background: #14171f;
+    background: #11151d;
     qproperty-drawBase: 0;
-    min-height: 32px;
+    min-height: 40px;
 }
 
 QTabBar::tab {
-    background: #14171f;
-    color: #d1d4dc;
-    padding: 5px 12px;
+    background: transparent;
+    color: transparent;
+    padding: 8px 34px 8px 14px;
     margin: 0;
-    min-width: 150px;
-    max-width: 230px;
-    min-height: 22px;
+    min-width: 160px;
+    max-width: 240px;
+    min-height: 28px;
     border: 0;
-    border-left: 1px solid #242833;
-    border-right: 1px solid #242833;
     border-radius: 0;
     font-size: 13px;
     font-weight: 500;
-}
-
-QTabBar::tab:hover {
-    background: #1b1f29;
-    color: #e3e2e7;
-}
-
-QTabBar::tab:selected {
-    background: #20242e;
-    color: #e3e2e7;
-    border-left-color: #2f3541;
-    border-right-color: #2f3541;
-}
-
-QTabBar::tab:pressed {
-    background: #262b36;
 }
 
 QTabBar::close-button {
@@ -88,21 +70,21 @@ QTabBar::close-button:hover {
     background: #43474e;
 }
 
-QTabWidget::corner { background: #14171f; }
+QTabWidget::corner { background: #11151d; }
 
 QToolButton {
     background: transparent;
     color: #c4c6cf;
     border: 0;
-    border-radius: 14px;
-    padding: 3px;
-    min-width: 28px;
-    min-height: 28px;
+    border-radius: 16px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
 }
 
 QTabWidget::corner QToolButton {
-    border-radius: 14px;
-    margin-top: 0;
+    border-radius: 16px;
+    margin-top: 3px;
 }
 
 QToolButton:hover {
@@ -122,21 +104,41 @@ QToolButton#windowClose:hover {
 QToolButton#primaryAction {
     background: #aac5ff;
     color: #00306e;
-    border-radius: 16px;
-    min-width: 32px;
-    min-height: 32px;
+    border-radius: 18px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 0;
 }
 
 QToolButton#primaryAction:hover { background: #c2d3ff; }
 QToolButton#primaryAction:pressed { background: #92b4f5; }
 
+QWidget#addressBox {
+    background: #1b1e25;
+    border: 1px solid #1b1e25;
+    border-radius: 18px;
+}
+
+QWidget#addressBox:hover { background: #20242e; border-color: #2d323d; }
+QWidget#addressBox:focus-within { background: #20242e; border-color: #aac5ff; }
+
+QLineEdit#addressEdit {
+    background: transparent;
+    color: #e3e2e7;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    selection-background-color: #284777;
+    selection-color: #d8e2ff;
+    font-size: 13px;
+}
+
 QLineEdit {
     background: #1b1e25;
     color: #e3e2e7;
     border: 1px solid #1b1e25;
-    border-radius: 16px;
-    padding: 5px 14px 5px 10px;
+    border-radius: 18px;
+    padding: 6px 14px;
     selection-background-color: #284777;
     selection-color: #d8e2ff;
     font-size: 13px;
@@ -233,41 +235,23 @@ QTabWidget::pane {
 }
 
 QTabBar {
-    background: #eef1f7;
+    background: #dfe3ea;
     qproperty-drawBase: 0;
-    min-height: 32px;
+    min-height: 40px;
 }
 
 QTabBar::tab {
-    background: #eef1f7;
-    color: #44474e;
-    padding: 5px 12px;
+    background: transparent;
+    color: transparent;
+    padding: 8px 34px 8px 14px;
     margin: 0;
-    min-width: 150px;
-    max-width: 230px;
-    min-height: 22px;
+    min-width: 160px;
+    max-width: 240px;
+    min-height: 28px;
     border: 0;
-    border-left: 1px solid #d7dbe4;
-    border-right: 1px solid #d7dbe4;
     border-radius: 0;
     font-size: 13px;
     font-weight: 500;
-}
-
-QTabBar::tab:hover {
-    background: #e5e9f2;
-    color: #1a1c1f;
-}
-
-QTabBar::tab:selected {
-    background: #ffffff;
-    color: #1a1c1f;
-    border-left-color: #d7dbe4;
-    border-right-color: #d7dbe4;
-}
-
-QTabBar::tab:pressed {
-    background: #dce1ea;
 }
 
 QTabBar::close-button {
@@ -285,21 +269,21 @@ QTabBar::close-button:hover {
     background: #c4c6cf;
 }
 
-QTabWidget::corner { background: #eef1f7; }
+QTabWidget::corner { background: #dfe3ea; }
 
 QToolButton {
     background: transparent;
     color: #44474e;
     border: 0;
-    border-radius: 14px;
-    padding: 3px;
-    min-width: 28px;
-    min-height: 28px;
+    border-radius: 16px;
+    padding: 4px;
+    min-width: 32px;
+    min-height: 32px;
 }
 
 QTabWidget::corner QToolButton {
-    border-radius: 14px;
-    margin-top: 0;
+    border-radius: 16px;
+    margin-top: 3px;
 }
 
 QToolButton:hover {
@@ -319,21 +303,41 @@ QToolButton#windowClose:hover {
 QToolButton#primaryAction {
     background: #4a76b3;
     color: #ffffff;
-    border-radius: 16px;
-    min-width: 32px;
-    min-height: 32px;
+    border-radius: 18px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 0;
 }
 
 QToolButton#primaryAction:hover { background: #5e8ac9; }
 QToolButton#primaryAction:pressed { background: #3a629b; }
 
+QWidget#addressBox {
+    background: #eef0f7;
+    border: 1px solid #eef0f7;
+    border-radius: 18px;
+}
+
+QWidget#addressBox:hover { background: #e4e8f0; border-color: #d5d9e2; }
+QWidget#addressBox:focus-within { background: #ffffff; border-color: #4a76b3; }
+
+QLineEdit#addressEdit {
+    background: transparent;
+    color: #1a1c1f;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    selection-background-color: #d8e2ff;
+    selection-color: #001a41;
+    font-size: 13px;
+}
+
 QLineEdit {
     background: #eef0f7;
     color: #1a1c1f;
     border: 1px solid #eef0f7;
-    border-radius: 16px;
-    padding: 5px 14px 5px 10px;
+    border-radius: 18px;
+    padding: 6px 14px;
     selection-background-color: #d8e2ff;
     selection-color: #001a41;
     font-size: 13px;
